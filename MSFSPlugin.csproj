@@ -4,12 +4,21 @@
     <TargetFramework>net8.0-windows8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <BaseOutputPath>C:\Users\steve\source\repos\sfawcett123\Broadcast2\Broadcast\Broadcast\bin</BaseOutputPath>
     <Platforms>AnyCPU;x64</Platforms>
+	<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputPath),'package'))/</PackageDir>
+    <PackagePath> c:\plugins\MSFS.zip</PackagePath>
   </PropertyGroup>
 
+	<Target Name="Package" DependsOnTargets="Publish">
+		<MakeDir Directories="$(PackageDir)" />
+		<ZipDirectory Overwrite="true" SourceDirectory="$(MSBuildProjectDirectory)/$(PublishDir)" DestinationFile="$(PackagePath)" />
+	</Target>
+	<Target Name="PackageClean" AfterTargets="Clean">
+		<Delete Files="$(PackagePath)" />
+	</Target>
+	
 	<ItemGroup>
-		<ProjectReference Include="..\PluginBase\PluginBase.csproj">
+		<ProjectReference Include="..\BroadcastPluginSDK\PluginBase.csproj">
 			<Private>false</Private>
 			<ExcludeAssets>runtime</ExcludeAssets>
 		</ProjectReference>
