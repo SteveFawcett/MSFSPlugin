@@ -1,9 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using PluginBase;
+﻿using BroadcastPluginSDK;
 using System.Diagnostics;
-using System.Drawing;
 using System.Reflection;
-using System.Windows.Forms;
 
 namespace MSFSPlugin
 {

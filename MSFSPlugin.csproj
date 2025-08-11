@@ -16,16 +16,13 @@
 	<Target Name="PackageClean" AfterTargets="Clean">
 		<Delete Files="$(PackagePath)" />
 	</Target>
-	
-	<ItemGroup>
-		<ProjectReference Include="..\BroadcastPluginSDK\PluginBase.csproj">
-			<Private>false</Private>
-			<ExcludeAssets>runtime</ExcludeAssets>
-		</ProjectReference>
-	</ItemGroup>
 
   <ItemGroup>
     <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BroadcastPluginSDK" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
