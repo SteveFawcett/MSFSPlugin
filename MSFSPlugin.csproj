@@ -5,6 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputPath),'package'))/</PackageDir>
 		<OutputDirectory>.</OutputDirectory>
 		<Version>$(Version)</Version>
@@ -15,6 +16,10 @@
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<Copyright>Copyright © 2025 Steven Fawcett, All Rights Reserved</Copyright>
 		<PackageTags>simulator;broadcast</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>airplane.png</PackageIcon>
+		<PackageProjectUrl>https://github.com/SteveFawcett/TestPlugin</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/SteveFawcett/TestPlugin</RepositoryUrl>
 	</PropertyGroup>
 
 	<Target Name="Package" DependsOnTargets="Publish">
