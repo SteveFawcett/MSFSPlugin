@@ -76,7 +76,7 @@ jobs:
     - name: Upload package
       uses: actions/upload-artifact@v4
       with:
-          name: ${ env.PluginName }
+          name: ${{ env.PluginName }}
           if-no-files-found: error
           retention-days: 7
           path: ${{ env.OutputDirectory }}/${{env.PluginName}}-v${{ env.Version }}.zip
@@ -86,7 +86,7 @@ jobs:
       if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
       uses: actions/download-artifact@v5
       with:
-        name: ${ env.PluginName }
+        name: ${{ env.PluginName }}
         path: ./artifacts
 
     - name: Upload Artifact via GitHub CLI
