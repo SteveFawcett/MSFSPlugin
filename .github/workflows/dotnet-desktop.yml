@@ -1,0 +1,100 @@
+name: .NET Core Desktop
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  release:
+    types:
+      - published    # Run the workflow when a new GitHub release is published
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: pwsh
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  OutputDirectory: ${{ github.workspace }}\artifacts
+  Version: ${{ github.ref_name }}
+  PluginName: MSFSPlugin
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        configuration: [ Release]
+
+    runs-on: windows-latest 
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Install the .NET Core workload
+    - name: Install .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    # Add  MSBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Get version from tag
+      id: get_version
+      if: github.event_name == 'release'
+      uses: jannemattila/get-version-from-tag@v4
+
+    - name: Resolve Version
+      run: |
+          if ("${{ github.event_name }}" -eq "release") {
+              $version = "${{ steps.get_version.outputs.version }}"
+          } else {
+              $version = Get-Date -Format "yyyy.MM.dd-HHmmss"
+          }
+          echo "Version=$version" >> $env:GITHUB_ENV
+
+    - name: Restore NuGet packages
+      run: dotnet restore 
+
+    - name: Ensure artifacts folder exists
+      run: mkdir -Force "${{ env.OutputDirectory }}"
+
+    - name: Package into ZIP
+      run: dotnet msbuild -t:Package `
+             -p:Configuration=${{ matrix.configuration }} `
+             -p:OutputDirectory="${{ env.OutputDirectory }}" `
+             -p:Version="${{ env.Version }}"
+
+    - name: Upload package
+      uses: actions/upload-artifact@v4
+      with:
+          name: ${ env.PluginName }
+          if-no-files-found: error
+          retention-days: 7
+          path: ${{ env.OutputDirectory }}/${{env.PluginName}}-v${{ env.Version }}.zip
+          
+      # Download the NuGet package creeted in the previous job
+    - name: Download package
+      if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+      uses: actions/download-artifact@v5
+      with:
+        name: ${ env.PluginName }
+        path: ./artifacts
+
+    - name: Upload Artifact via GitHub CLI
+      if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} ./artifacts/${{env.PluginName}}-v${{ github.event.release.tag_name }}.zip --clobber
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+ 
+      
