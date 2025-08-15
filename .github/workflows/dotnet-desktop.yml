@@ -61,16 +61,14 @@ jobs:
           }
           echo "Version=$version" >> $env:GITHUB_ENV
 
-    - name: Restore NuGet packages
-      run: dotnet restore 
-
     - name: Ensure artifacts folder exists
       run: mkdir -Force "${{ env.OutputDirectory }}"
 
     - name: Package into ZIP
-      run: dotnet msbuild -t:Package `
-             -p:Configuration=${{ matrix.configuration }} `
-             -p:OutputDirectory="${{ env.OutputDirectory }}" `
+      run: dotnet msbuild -t:Package
+             -restore
+             -p:Configuration=${{ matrix.configuration }} 
+             -p:OutputDirectory="${{ env.OutputDirectory }}"
              -p:Version="${{ env.Version }}"
 
     - name: Upload package

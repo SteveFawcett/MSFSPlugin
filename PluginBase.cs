@@ -4,13 +4,12 @@ using System.Reflection;
 
 namespace MSFSPlugin
 {
-    public class PluginBase : BroadcastPlugin
+    public class PluginBase : BroadcastPluginBase
     {
         public override string Stanza => "MSFS";
-        public override void Start()
+        public override string Start()
         {
-            Debug.WriteLine($"Starting {Name} plugin.");
-            // This PluginBase does not do anything on start, but it could be used to initialize resources or connections.
+            return "This PluginBase does not do anything on start, but it could be used to initialize resources or connections.";
         }
 
         public PluginBase() : base()

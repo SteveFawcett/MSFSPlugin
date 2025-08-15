@@ -38,9 +38,13 @@
     <None Include=".github\workflows\dotnet-desktop.yml" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="BroadcastPluginSDK" Version="1.0.4" />
-  </ItemGroup>
+	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
+		<ProjectReference Include="..\BroadcastPluginSDK\BroadcastPluginSDK.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="BroadcastPluginSDK" Version="1.0.5" />
+	</ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
