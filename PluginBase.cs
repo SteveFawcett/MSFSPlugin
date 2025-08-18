@@ -1,18 +1,17 @@
-﻿using BroadcastPluginSDK;
+﻿using BroadcastPluginSDK.abstracts;
 using Microsoft.Extensions.Configuration;
+using MSFSPlugin.Properties;
 
+namespace MSFSPlugin;
 
-namespace MSFSPlugin
+public class PluginBase : BroadcastPluginBase
 {
-    public class PluginBase : BroadcastPluginBase
+    public PluginBase(IConfiguration configuration) : base(
+        configuration, null,
+        Resources.red,
+        "FlightSim",
+        "MSFS",
+        "Microsoft Flight Simulator PluginBase.")
     {
-        public PluginBase( IConfiguration configuration) : base(
-            configuration , null,
-            Properties.Resources.red,
-            "FlightSim",
-            "MSFS",
-            "Microsoft Flight Simulator PluginBase.")
-        {
-        }
     }
 }
