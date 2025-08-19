@@ -1,17 +1,27 @@
 ﻿using BroadcastPluginSDK.abstracts;
+using BroadcastPluginSDK.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MSFSPlugin.Properties;
 
 namespace MSFSPlugin;
 
 public class PluginBase : BroadcastPluginBase
 {
-    public PluginBase(IConfiguration configuration) : base(
+    private const string PluginName = "MSFSPlugin";
+    private const string PluginDescription = "Microsoft Flight Simulator PluginBase.";
+    private const string Stanza = "MSFS";
+
+    private ILogger<IPlugin> _logger;
+
+    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : base(
         configuration, null,
         Resources.red,
-        "FlightSim",
-        "MSFS",
-        "Microsoft Flight Simulator PluginBase.")
+        PluginName,
+        Stanza,
+        PluginDescription)
     {
+        _logger = logger;
+        _logger.LogInformation( PluginDescription );
     }
 }
