@@ -8,8 +8,8 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputPath),'package'))/</PackageDir>
 		<OutputDirectory>.</OutputDirectory>
-		<Version>$(Version)</Version>
-		<PackageFileName>$(AssemblyName)-v$(Version).zip</PackageFileName>
+		<AssemblyVersion>0.0.0</AssemblyVersion>
+		<PackageFileName>$(AssemblyName)-v$(AssemblyVersion).zip</PackageFileName>
 		<PackagePath>$(OutputDirectory)\$(PackageFileName)</PackagePath>
 		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
 		<RepositoryType>git</RepositoryType>
@@ -43,7 +43,11 @@
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="BroadcastPluginSDK" Version="1.0.5" />
+		<PackageReference Include="BroadcastPluginSDK" Version="1.0.6" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
 	</ItemGroup>
 
   <ItemGroup>

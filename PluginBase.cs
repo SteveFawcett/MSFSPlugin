@@ -1,23 +1,20 @@
-﻿using BroadcastPluginSDK;
-using System.Diagnostics;
-using System.Reflection;
+﻿using BroadcastPluginSDK.abstracts;
+using BroadcastPluginSDK.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using MSFSPlugin.Properties;
 
-namespace MSFSPlugin
+namespace MSFSPlugin;
+
+public class PluginBase : BroadcastPluginBase
 {
-    public class PluginBase : BroadcastPluginBase
-    {
-        public override string Stanza => "MSFS";
-        public override string Start()
-        {
-            return "This PluginBase does not do anything on start, but it could be used to initialize resources or connections.";
-        }
 
-        public PluginBase() : base()
-        {
-            Name = "MFSF PluginBase";
-            Description = "Microsoft Flight Simulator PluginBase.";
-            Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
-            Icon = Properties.Resources.red;
-        }
+    private const string Stanza = "MSFS";
+    private ILogger<IPlugin> _logger;
+
+    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : 
+        base( configuration, null, Resources.red, Stanza)
+    {
+        _logger = logger;
     }
 }
