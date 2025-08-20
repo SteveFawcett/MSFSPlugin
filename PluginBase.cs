@@ -8,20 +8,13 @@ namespace MSFSPlugin;
 
 public class PluginBase : BroadcastPluginBase
 {
-    private const string PluginName = "MSFSPlugin";
-    private const string PluginDescription = "Microsoft Flight Simulator PluginBase.";
-    private const string Stanza = "MSFS";
 
+    private const string Stanza = "MSFS";
     private ILogger<IPlugin> _logger;
 
-    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : base(
-        configuration, null,
-        Resources.red,
-        PluginName,
-        Stanza,
-        PluginDescription)
+    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : 
+        base( configuration, null, Resources.red, Stanza)
     {
         _logger = logger;
-        _logger.LogInformation( PluginDescription );
     }
 }
