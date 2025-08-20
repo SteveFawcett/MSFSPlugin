@@ -8,8 +8,8 @@
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputPath),'package'))/</PackageDir>
 		<OutputDirectory>.</OutputDirectory>
-		<Version>$(Version)</Version>
-		<PackageFileName>$(AssemblyName)-v$(Version).zip</PackageFileName>
+		<AssemblyVersion>0.0.0</AssemblyVersion>
+		<PackageFileName>$(AssemblyName)-v$(AssemblyVersion).zip</PackageFileName>
 		<PackagePath>$(OutputDirectory)\$(PackageFileName)</PackagePath>
 		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
 		<RepositoryType>git</RepositoryType>
