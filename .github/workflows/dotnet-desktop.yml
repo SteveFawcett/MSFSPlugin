@@ -57,7 +57,7 @@ jobs:
           if ("${{ github.event_name }}" -eq "release") {
               $version = "${{ steps.get_version.outputs.version }}"
           } else {
-              $version = Get-Date -Format "yyyy.MM.dd-HHmmss"
+              $version = Get-Date -Format "yyyy.MM.dd"
           }
           echo "Version=$version" >> $env:GITHUB_ENV
 
