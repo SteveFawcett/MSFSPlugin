@@ -65,32 +65,17 @@ jobs:
       run: mkdir -Force "${{ env.OutputDirectory }}"
 
     - name: Package into ZIP
-      run: dotnet msbuild -t:Package
+      run: dotnet msbuild
              -restore
+             -t:Publish
              -p:Configuration=${{ matrix.configuration }} 
-             -p:OutputDirectory="${{ env.OutputDirectory }}"
+             -p:OutputDirectory="${{ env.OutputDirectory }}" 
              -p:AssemblyVersion="${{ env.Version }}"
-
-    - name: Upload package
-      uses: actions/upload-artifact@v4
-      with:
-          name: ${{ env.PluginName }}
-          if-no-files-found: error
-          retention-days: 7
-          path: ${{ env.OutputDirectory }}/${{env.PluginName}}-v${{ env.Version }}.zip
-          
-      # Download the NuGet package creeted in the previous job
-    - name: Download package
-      if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
-      uses: actions/download-artifact@v5
-      with:
-        name: ${{ env.PluginName }}
-        path: ./artifacts
 
     - name: Upload Artifact via GitHub CLI
       if: ${{ github.event_name == 'release' && github.event.action == 'published' }}
       run: |
-        gh release upload ${{ github.event.release.tag_name }} ./artifacts/${{env.PluginName}}-v${{ github.event.release.tag_name }}.zip --clobber
+        gh release upload ${{ github.event.release.tag_name }} ${{ env.OutputDirectory }}/${{env.PluginName}}-v${{ env.Version }}.zip --clobber
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

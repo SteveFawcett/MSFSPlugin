@@ -9,11 +9,11 @@ namespace MSFSPlugin;
 public class PluginBase : BroadcastPluginBase
 {
 
-    private const string Stanza = "MSFS";
+    private const string STANZA = "MSFS";
     private ILogger<IPlugin> _logger;
 
     public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : 
-        base( configuration, null, Resources.red, Stanza)
+        base( configuration, null, Resources.red, STANZA)
     {
         _logger = logger;
     }
