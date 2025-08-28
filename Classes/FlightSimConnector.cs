@@ -2,25 +2,24 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.FlightSimulator.SimConnect;
-using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 
 namespace MSFSPlugin.Classes
 {
     public class FlightSimConnector : IDisposable
     {
-        IntPtr simConnectHandle;
-
+        private IntPtr simConnectHandle;
         private SimConnect? simConnect;
-        private nint windowHandle ;
+        private readonly nint windowHandle;
         private const int WM_USER_SIMCONNECT = 0x0402;
 
-        public event EventHandler<bool>? ConnectionStatusChanged;
+        private readonly ILogger<IPlugin>? logger;
+        private readonly System.Timers.Timer? connectionRetryTimer;
 
         private bool isConnected = false;
+        private int period;
+        public event EventHandler<bool>? ConnectionStatusChanged;
 
         public FlightSimConnector(nint hwnd)
         {
@@ -29,32 +28,47 @@ namespace MSFSPlugin.Classes
 
         public FlightSimConnector(IConfiguration configuration, ILogger<IPlugin> logger)
         {
-            logger.LogInformation( "Flight Simulator Connector Starting" );
+            this.logger = logger;
+            logger.LogInformation("Flight Simulator Connector Starting");
 
-            var SDK = configuration.GetValue<string>("SDK") ?? string.Empty;
-            if (string.IsNullOrEmpty(SDK))
+            var SDK = Helpers.GetConfiguration(configuration, "SDK", "C:\\MSFS 2024 SDK\\SimConnect SDK");
+            string PERIOD = Helpers.GetConfiguration(configuration, "PERIOD", "5000");
+
+            if (!int.TryParse(PERIOD, out period))
             {
-                SDK = "C:\\MSFS 2024 SDK\\SimConnect SDK";
-                configuration["SDK"] = SDK;
+                period = 5000; // Default to 5 seconds if parsing fails
             }
 
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
             {
                 if (args.Name.StartsWith("Microsoft.FlightSimulator.SimConnect"))
                 {
-                    return EmbeddedAssemblyLoader.LoadManagedAssembly(
-                        Path.Combine( SDK , "lib\\managed" ),
-                        "Microsoft.FlightSimulator.SimConnect.dll"
-                    );
+                    string dllPath = Path.Combine(SDK, "lib", "managed", "Microsoft.FlightSimulator.SimConnect.dll");
+                    return Assembly.LoadFrom(dllPath);
                 }
-
                 return null;
             };
-         
-            simConnectHandle = NativeLoader.LoadEmbeddedDll("MSFSPlugin.SimConnect.SimConnect.dll",
-                                                            Path.Combine( SDK , "lib" ), 
-                                                            "SimConnect.dll");
 
+            simConnectHandle = NativeLoader.LoadEmbeddedDll(
+                "MSFSPlugin.SimConnect.SimConnect.dll",
+                Path.Combine(SDK, "lib"),
+                "SimConnect.dll"
+            );
+
+            // Set up retry timer
+            logger?.LogInformation($"Setting up connection retry timer with period: {period} ms");
+            connectionRetryTimer = new System.Timers.Timer(period);
+            connectionRetryTimer.Elapsed += (s, e) => TryConnect();
+            connectionRetryTimer.AutoReset = true;
+            connectionRetryTimer.Start();
+        }
+
+        private void TryConnect()
+        {
+            if (isConnected || simConnect != null) return;
+
+            logger?.LogDebug("Attempting to connect to SimConnect...");
+            Connect();
         }
 
         public void Connect()
@@ -67,9 +81,11 @@ namespace MSFSPlugin.Classes
                 simConnect.OnRecvException += SimConnect_OnRecvException;
 
                 UpdateConnectionStatus(true);
+                logger?.LogInformation("SimConnect connection established.");
             }
             catch (COMException)
             {
+                logger?.LogWarning( "SimConnect connection attempt failed.");
                 UpdateConnectionStatus(false);
             }
         }
@@ -81,6 +97,7 @@ namespace MSFSPlugin.Classes
                 simConnect.Dispose();
                 simConnect = null;
                 UpdateConnectionStatus(false);
+                logger?.LogInformation("SimConnect disconnected.");
             }
         }
 
@@ -110,11 +127,14 @@ namespace MSFSPlugin.Classes
             {
                 isConnected = connected;
                 ConnectionStatusChanged?.Invoke(this, connected);
+                logger?.LogInformation($"SimConnect status changed: {(connected ? "Connected" : "Disconnected")}");
             }
         }
 
         public void Dispose()
         {
+            connectionRetryTimer?.Stop();
+            connectionRetryTimer?.Dispose();
             Disconnect();
         }
     }
