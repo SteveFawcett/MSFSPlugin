@@ -7,6 +7,10 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<Prefer32Bit>false</Prefer32Bit>
+		
 		<OutputDirectory>$(AppData)\Broadcast\Plugins\</OutputDirectory>
 		<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputDirectory),''))/</PackageDir>
 		<PackageFileName>$(AssemblyName)-v$(AssemblyVersion).zip</PackageFileName>
@@ -22,6 +26,7 @@
 		<PackageIcon>airplane.png</PackageIcon>
 		<PackageProjectUrl>https://github.com/SteveFawcett/TestPlugin</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/SteveFawcett/TestPlugin</RepositoryUrl>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<Target Name="AutoPackage" AfterTargets="Publish">
@@ -51,6 +56,7 @@
 	</Target>
 
 		<ItemGroup>
+    <Folder Include="SimConnect\" />
     <Folder Include="Resources\" />
   </ItemGroup>
 
@@ -69,6 +75,18 @@
 	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.FlightSimulator.SimConnect">
+      <HintPath>SimConnect\Microsoft.FlightSimulator.SimConnect.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
@@ -77,12 +95,5 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
+	
 </Project>
