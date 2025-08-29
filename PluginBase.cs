@@ -33,12 +33,12 @@ public class PluginBase : BroadcastPluginBase
     {
         if (isConnected)
         {
-            _logger.LogInformation("Connected to Flight Simulator");
+            _logger?.LogInformation("Connected to Flight Simulator");
             Icon = Resources.green;
         }
         else
         {
-            _logger.LogWarning("Disconnected from Flight Simulator");
+            _logger?.LogWarning("Disconnected from Flight Simulator");
             Icon = Resources.red;
         }
     }

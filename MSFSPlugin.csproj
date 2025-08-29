@@ -26,7 +26,7 @@
 		<PackageIcon>airplane.png</PackageIcon>
 		<PackageProjectUrl>https://github.com/SteveFawcett/TestPlugin</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/SteveFawcett/TestPlugin</RepositoryUrl>
-		<Platforms>AnyCPU;x64</Platforms>
+		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
 	<Target Name="AutoPackage" AfterTargets="Publish">
