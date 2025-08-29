@@ -3,42 +3,72 @@ using BroadcastPluginSDK.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MSFSPlugin.Classes;
+using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
+using System.Runtime.CompilerServices;
+using System.Timers;
 
 namespace MSFSPlugin;
 
-public class PluginBase : BroadcastPluginBase
+public partial class PluginBase : BroadcastPluginBase, IManager
 {
-
     private const string STANZA = "MSFS";
     private ILogger<IPlugin>? _logger;
-    private FlightSimConnector? _connector;
+    private DisplayLogging? _displayLogging;
+    private Connect connect;
+    private System.Timers.Timer? connectTimer;
+    private bool isConnected = false;
+
 
     public PluginBase() : base() { }
 
-    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) : 
-        base( configuration, null, Resources.red, STANZA)
+    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) :
+        base(configuration, null, Resources.red, STANZA)
     {
-        _connector = new FlightSimConnector(configuration.GetSection(STANZA), logger);
+
         _logger = logger;
+        _displayLogging = new DisplayLogging(logger);
 
-        _logger.LogInformation("MSFS Plugin Initialized");
-        _logger.LogInformation($"Process is {(Environment.Is64BitProcess ? "64-bit" : "32-bit")}");
+        _displayLogging.LogInformation("MSFS Plugin Initialized");
+        _displayLogging.LogInformation($"Process is {(Environment.Is64BitProcess ? "64-bit" : "32-bit")}");
 
-        _connector.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
-         _connector.Connect();
+        SimSdkLoader.Load(_displayLogging, configuration); // Load SimConnect SDK
+
+        setMenu(); // Setup context menu
+
+        connect = new Connect(_displayLogging);
+
+        SetupTimer(); // Setup connection timer
+
+        //connect.AddRequests(["PLANE ALTITUDE"]);
+    }
+
+    private void SetupTimer()
+    {
+        connectTimer = new System.Timers.Timer(3000); // every 3 seconds
+        connectTimer.Elapsed += (_, _) => SimulatorReconnect();
+        connectTimer.AutoReset = true;
+        connectTimer.Start();
+    }
+
+    private void SimulatorReconnect()
+    {
+        if (isConnected) return;
+       
+        _displayLogging?.LogDebug("SimulatorReconnect() was called by timer.");
+        isConnected = connect.ConnectToSim();
     }
 
     private void Connector_ConnectionStatusChanged(object? sender, bool isConnected)
     {
         if (isConnected)
         {
-            _logger?.LogInformation("Connected to Flight Simulator");
+            _displayLogging?.LogInformation(  "Connected to Flight Simulator");
             Icon = Resources.green;
         }
         else
         {
-            _logger?.LogWarning("Disconnected from Flight Simulator");
+            _displayLogging?.LogWarning("Disconnected from Flight Simulator") ;
             Icon = Resources.red;
         }
     }
