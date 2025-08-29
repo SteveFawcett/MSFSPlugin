@@ -15,7 +15,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager
     private const string STANZA = "MSFS";
     private ILogger<IPlugin>? _logger;
     private DisplayLogging? _displayLogging;
-    private Connect connect;
+    private Connect? connect;
     private System.Timers.Timer? connectTimer;
     private bool isConnected = false;
 
@@ -37,6 +37,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager
         setMenu(); // Setup context menu
 
         connect = new Connect(_displayLogging);
+        connect.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
 
         SetupTimer(); // Setup connection timer
 
@@ -53,7 +54,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager
 
     private void SimulatorReconnect()
     {
-        if (isConnected) return;
+        if (isConnected || connect is null ) return;
        
         _displayLogging?.LogDebug("SimulatorReconnect() was called by timer.");
         isConnected = connect.ConnectToSim();

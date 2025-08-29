@@ -1,4 +1,5 @@
-﻿using Microsoft.FlightSimulator.SimConnect;
+﻿using BroadcastPluginSDK.Classes;
+using Microsoft.FlightSimulator.SimConnect;
 using MSFSPlugin.Forms;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
@@ -22,7 +23,8 @@ namespace MSFSPlugin.Classes
         private DisplayLogging? logger = null;
         #endregion
 
-        #region Private Methods
+        public event EventHandler<bool>? ConnectionStatusChanged;
+        public bool isConnected { get; private set; } = false;
 
         public bool ConnectToSim()
         {
@@ -35,9 +37,11 @@ namespace MSFSPlugin.Classes
                     if (m_oSimConnect is not null)
                     {
                         logger?.LogInformation("SimConnect connection established.");
-                        m_oSimConnect.OnRecvOpen += new SimConnect.RecvOpenEventHandler(SimConnect_OnRecvOpen);
-                        m_oSimConnect.OnRecvSimobjectDataBytype += new SimConnect.RecvSimobjectDataBytypeEventHandler(SimConnect_OnRecvSimobjectDataBytype);
-                        m_oSimConnect.OnRecvSystemState += new SimConnect.RecvSystemStateEventHandler(SimConnect_OnRecvEvent);
+                        m_oSimConnect.OnRecvOpen += SimConnect_OnRecvOpen;
+                        m_oSimConnect.OnRecvSimobjectDataBytype += SimConnect_OnRecvSimobjectDataBytype;
+                        m_oSimConnect.OnRecvSystemState += SimConnect_OnRecvEvent;
+                        m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
+                        m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
 
                         try
                         {
@@ -46,7 +50,6 @@ namespace MSFSPlugin.Classes
                         catch (Exception ex)
                         {
                             logger?.LogError($"{ex.Message}: Failed to subscribe to system event.");
-                            return false;
                         }
 
                     }
@@ -54,25 +57,23 @@ namespace MSFSPlugin.Classes
                 catch (COMException)
                 {
                     logger?.LogError("SimConnect connection failed. Is MSFS running?");
-                    m_oSimConnect = null;
-                    return false;
                 }
                 catch (Exception)
                 {
                     logger?.LogError("Unexpected error during SimConnect connection.");
-                    m_oSimConnect = null;
-                    return false;
                 }
             }
 
+            UpdateConnectionStatus(m_oSimConnect is not null);
             return m_oSimConnect is not null;
         }
+
         private void InternalAddRequest(string _sNewSimvarRequest, string _sNewUnitRequest, bool _bIsString)
         {
             logger?.LogInformation($"AddRequest {_sNewSimvarRequest}");
 
 
-            if (!ValidateRequest(_sNewSimvarRequest))
+            if (!Helpers.ValidateRequest(_sNewSimvarRequest))
             {
                 logger?.LogError($"Invalid request: {_sNewSimvarRequest}. Skipping.");
                 throw new InvalidSimDataRequestException($"Invalid request: {_sNewSimvarRequest}. Skipping.");
@@ -129,11 +130,12 @@ namespace MSFSPlugin.Classes
             try
             {
                 m_oSimConnect?.ReceiveMessage();
+                UpdateConnectionStatus(true);
             }
             catch (Exception ex)
             {
                 logger?.LogError( $"{ex} Error receiving SimConnect message.");
-                m_oSimConnect = null;
+                UpdateConnectionStatus(false);
             }
         }
         private bool RegisterToSimConnect(SimvarRequest _oSimvarRequest)
@@ -164,6 +166,25 @@ namespace MSFSPlugin.Classes
             else
             {
                 return false;
+            }
+        }
+        private void SimConnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
+        {
+            UpdateConnectionStatus(false);
+        }
+
+        private void SimConnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
+        {
+            UpdateConnectionStatus(false);
+        }
+
+        private void UpdateConnectionStatus(bool connected)
+        {
+            if (isConnected != connected)
+            {
+                isConnected = connected;
+                ConnectionStatusChanged?.Invoke(this, connected);
+                logger?.LogInformation($"SimConnect status changed: {(connected ? "Connected" : "Disconnected")}");
             }
         }
         private void SimConnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
@@ -261,56 +282,14 @@ namespace MSFSPlugin.Classes
             }
 
         }
-        public static bool ValidateRequest(string request)
-        {
-            Console.WriteLine($"Validating request: {request}");
 
-            string trimmedRequest;
-            string trimmedIndex;
-
-            if (request?.Split(":").Length < 2)
-            {
-                // If no index is provided, default to "0"
-                trimmedRequest = request ?? "";
-                trimmedIndex = "1";
-            }
-            else
-            {
-                trimmedRequest = request?.Split(":")[0] ?? "";
-                trimmedIndex = request?.Split(":")[1] ?? "1";
-            }
-            Console.WriteLine($"Checking index : {trimmedIndex} is an integer between 1 and 10");
-
-            if (!int.TryParse(trimmedIndex, out int index))
-            {
-                Console.WriteLine($"Non integer validating request index: {trimmedIndex}");
-                return false;
-            }
-
-            if (index < 1 || index > 10)
-            {
-                Console.WriteLine($"Integer value out of bounds in request index: {index}");
-                return false;
-            }
-
-            Console.WriteLine($"Checking request: {trimmedRequest} is in SimVar List");
-            return !string.IsNullOrWhiteSpace(request) && SimVars.Names.Contains(trimmedRequest);
-        }
-
-        #endregion
-
-        #region Public Methods
-        /// <summary>  
-        /// Retrieves the current aircraft data and connection status from the simulator.  
-        /// </summary>  
-        /// <returns>A dictionary containing the connection status and aircraft data.</returns>  
         public Dictionary<string, string> AircraftData()
         {
             ReceiveSimConnectMessage();
 
             Dictionary<string, string> ReturnValue = new()
                 {
-                    { "IsConnected", false.ToString() },
+                    { "IsConnected", isConnected.ToString() },
                     { "AircaftLoaded", AircaftLoaded ?? UnknownAircraft }
                 };
             try
@@ -343,10 +322,6 @@ namespace MSFSPlugin.Classes
             return ReturnValue;
         }
 
-        /// <summary>
-        /// Adds a new Simvar request to the SimConnect connection.
-        /// </summary>
-        /// <param name="_sNewSimvarRequest">The name of the Simvar to request.</param>
         public void AddRequest(string _sNewSimvarRequest)
         {
             try
@@ -359,10 +334,7 @@ namespace MSFSPlugin.Classes
                 throw; // Fixes CA2200 by re-throwing the exception without altering the stack trace.
             }
         }
-        /// <summary>
-        /// Adds multiple Simvar requests to the SimConnect connection.
-        /// </summary>
-        /// <param name="Outputs">A list of Simvar names to request.</param>
+
         public void AddRequests(List<string> Outputs)
         {
             if (Outputs is not null && Outputs.Count > 0)
@@ -383,32 +355,7 @@ namespace MSFSPlugin.Classes
         public Connect( DisplayLogging logger )
         {
             this.logger = logger;
-            this.Initialise(IntPtr.Zero, DefaultTimerIntervalMs);
+            lSimvarRequests = [];
         }
- 
-        public Connect(IntPtr hWnd, int time)
-        {
-            this.Initialise(hWnd, time);
-        }
-
-        private void Initialise(IntPtr hWnd, int time)
-        {
-            try
-            {
-
-                if (hWnd != IntPtr.Zero)
-                {
-                    this.hWnd = hWnd;
-                }
-
-                lSimvarRequests = [];
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError(ex.Message);
-            }
-        }
-        #endregion
-
     }
 }
