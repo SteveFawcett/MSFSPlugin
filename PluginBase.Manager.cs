@@ -12,7 +12,7 @@ namespace MSFSPlugin
         public event EventHandler<UserControl>? ShowScreen; // Not implemented in this plugin
         public event EventHandler? WriteConfiguration;     // Not implemented in this plugin
 
-        private void setMenu()
+        private void SetMenu()
         {
             ContextMenuItems = new List<ToolStripItem>()
             {

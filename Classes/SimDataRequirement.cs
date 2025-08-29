@@ -50,7 +50,7 @@
         AIRCRAFT_LOADED,
     }
 
-    public partial class Connect 
+    public partial class FlightSimulator 
     {
         /// <summary> Constants for SimConnect messages
         /// These constants are used to identify messages sent by SimConnect.

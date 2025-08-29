@@ -10,7 +10,7 @@ namespace MSFSPlugin.Classes
     /// Represents a connection to the Microsoft Flight Simulator using SimConnect.
     /// Provides methods to manage simulator data requests and handle connection events.
     /// </summary>
-    public partial class Connect 
+    public partial class FlightSimulator : IDisposable
     {
         #region Private variables
         private SimConnect? m_oSimConnect = null;
@@ -352,7 +352,13 @@ namespace MSFSPlugin.Classes
                 }
             }
         }
-        public Connect( DisplayLogging logger )
+
+        public void Dispose()
+        {
+           if( m_oSimConnect is not null ) m_oSimConnect.Dispose();
+        }
+
+        public FlightSimulator( DisplayLogging logger )
         {
             this.logger = logger;
             lSimvarRequests = [];
