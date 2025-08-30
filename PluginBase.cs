@@ -6,12 +6,13 @@ using MSFSPlugin.Classes;
 using MSFSPlugin.Controls;
 using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
+using System.Data;
 using System.Runtime.CompilerServices;
 using System.Timers;
 
 namespace MSFSPlugin;
 
-public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
+public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDisposable
 {
     private const string STANZA = "MSFS";
     private ILogger<IPlugin>? _logger;
@@ -21,6 +22,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
     private bool isConnected = false;
     private bool disposedValue;
     private readonly object connectionLock = new();
+    public event EventHandler<Dictionary<string, string>>? DataReceived;
 
     public PluginBase() : base() { }
 
@@ -58,9 +60,13 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
 
         connect = new FlightSimulator(_displayLogging, messageWindow.Handle);
         connect.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
-
+        connect.DataReceived += FlightSimulator_DataReceived;
         SetupTimer(); // Setup connection timer
+    }
 
+    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
+    {
+        DataReceived?.Invoke(this, e);
     }
 
     private void SetupTimer()
@@ -73,7 +79,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        SimulatorReconnect();
+        SimulatorReconnect();        
     }
 
     private void SimulatorReconnect()

@@ -22,6 +22,8 @@ namespace MSFSPlugin.Classes
         private IntPtr hWnd = IntPtr.Zero;
         private readonly object simvarRequestsLock = new();
         private DisplayLogging? logger = null;
+
+        public event EventHandler<Dictionary<string, string>>? DataReceived;
         #endregion
 
         public SimConnect? Connection { get => m_oSimConnect; }
@@ -169,7 +171,7 @@ namespace MSFSPlugin.Classes
         private void SimConnect_OnRecvSimobjectDataBytype(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE data)
         {
             logger?.LogDebug( $"Received SimObject Data for Request ID: {data.dwRequestID}");
-            List<Dictionary<string, string>> AircraftData = [];
+            Dictionary<string, string> AircraftData = [];
 
             uint iRequest = data.dwRequestID;
             lock (simvarRequestsLock)
@@ -193,7 +195,7 @@ namespace MSFSPlugin.Classes
                                     ResultStructure result = (ResultStructure)data.dwData[0];
                                     oSimvarRequest.dValue = 0;
                                     oSimvarRequest.sValue = result.sValue;
-                                    AircraftData.Add(new Dictionary<string, string> { { oSimvarRequest.sName, oSimvarRequest.sValue ?? string.Empty } });
+                                    AircraftData.Add( oSimvarRequest.sName, oSimvarRequest.sValue ?? string.Empty );
                                     logger?.LogDebug($"Received string value: {oSimvarRequest.sValue} for request: {oSimvarRequest.sName}");
                                 }
                                 else
@@ -201,7 +203,7 @@ namespace MSFSPlugin.Classes
                                     double dValue = (double)data.dwData[0];
                                     oSimvarRequest.dValue = dValue;
                                     oSimvarRequest.sValue = dValue.ToString("F9");
-                                    AircraftData.Add(new Dictionary<string, string> { { oSimvarRequest.sName, oSimvarRequest.dValue.ToString() } });
+                                    AircraftData.Add(oSimvarRequest.sName, oSimvarRequest.dValue.ToString());
                                     logger?.LogDebug($"Received double value: {dValue} for request: {oSimvarRequest.sName}");
                                 }
                             }
@@ -213,6 +215,7 @@ namespace MSFSPlugin.Classes
                     }
                 }
             }
+            DataReceived?.Invoke(this, AircraftData);
             MakeRequests();
         }
 
