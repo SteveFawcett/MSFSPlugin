@@ -22,6 +22,7 @@ namespace MSFSPlugin.Classes
         private IntPtr hWnd = IntPtr.Zero;
         private readonly object simvarRequestsLock = new();
         private DisplayLogging? logger = null;
+        private System.Windows.Forms.Timer requestTimer;
 
         public event EventHandler<Dictionary<string, string>>? DataReceived;
         #endregion
@@ -30,6 +31,16 @@ namespace MSFSPlugin.Classes
 
         public event EventHandler<bool>? ConnectionStatusChanged;
         public bool isConnected { get; private set; } = false;
+
+        
+
+        private void SetupRequestTimer()
+        {
+            requestTimer = new();
+            requestTimer.Interval = 1000; // 1 second
+            requestTimer.Tick += (_, _) => MakeRequests();
+            requestTimer.Start();
+        }
 
         public bool ConnectToSim()
         {
@@ -76,7 +87,6 @@ namespace MSFSPlugin.Classes
         {
             try
             {
-                m_oSimConnect?.ReceiveMessage();
                 UpdateConnectionStatus(true);
             }
             catch (Exception ex)
@@ -216,7 +226,6 @@ namespace MSFSPlugin.Classes
                 }
             }
             DataReceived?.Invoke(this, AircraftData);
-            MakeRequests();
         }
 
 
@@ -230,10 +239,17 @@ namespace MSFSPlugin.Classes
             this.hWnd = hWnd;
             this.logger = logger;
             lSimvarRequests = [];
+            SetupRequestTimer();
         }
 
         private void MakeRequests()
         {
+            if (m_oSimConnect is null)
+            {
+                logger?.LogDebug("SimConnect is not connected. Cannot make requests.");
+                return;
+            }
+
             logger?.LogDebug("Making data requests to SimConnect.");
 
             foreach (SimvarRequest oSimvarRequest in lSimvarRequests)
@@ -290,8 +306,6 @@ namespace MSFSPlugin.Classes
             ++m_iCurrentDefinition;
             ++m_iCurrentRequest;
             logger?.LogDebug($"Request {_sNewSimvarRequest} added with Definition ID: {oSimvarRequest.eDef} and Request ID: {oSimvarRequest.eRequest}");
-
-            MakeRequests();
         }
     }
 }

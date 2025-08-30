@@ -6,6 +6,7 @@ using MSFSPlugin.Classes;
 using MSFSPlugin.Controls;
 using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
+using System.Configuration;
 using System.Data;
 using System.Runtime.CompilerServices;
 using System.Timers;
@@ -18,6 +19,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     private ILogger<IPlugin>? _logger;
     private DisplayLogging? _displayLogging;
     private FlightSimulator? connect;
+    private IConfiguration? _configuration;
     private System.Timers.Timer? connectTimer;
     private bool isConnected = false;
     private bool disposedValue;
@@ -36,6 +38,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _displayLogging = new DisplayLogging(logger);
+        _configuration = configuration;
 
         _displayLogging.LogInformation("MSFS Plugin Initialized");
         _displayLogging.LogInformation($"Process is {(Environment.Is64BitProcess ? "64-bit" : "32-bit")}");
@@ -62,11 +65,12 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
         connect.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
         connect.DataReceived += FlightSimulator_DataReceived;
         SetupTimer(); // Setup connection timer
+
     }
 
     private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
     {
-        DataReceived?.Invoke(this, e);
+       DataReceived?.Invoke(this, e);
     }
 
     private void SetupTimer()
@@ -109,7 +113,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
             {
                 _displayLogging?.LogInformation("Connected to Flight Simulator");
                 Icon = Resources.green; //TODO: Trigger an Icon change
-                connect?.AddRequest("PLANE ALTITUDE", "feet", false);
+                LoadExportedVariables();
             }
             else
             {
@@ -119,6 +123,18 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
         }
     }
 
+    private void LoadExportedVariables()
+    {
+        if( _configuration is null ) return;
+
+        foreach (var config in _configuration.GetSection("MSFS").GetChildren())
+            if (config.Key == "export")
+                foreach (var dataSet in config.GetChildren())
+                {
+                    connect?.AddRequest(dataSet["variable"] ?? "Not Known", dataSet["measure"] ?? "feet", bool.Parse(dataSet["string"] ?? "false"));
+                }
+                   
+    }
     /// <summary>
     /// Releases the unmanaged resources used by the PluginBase and optionally releases the managed resources.
     /// </summary>
