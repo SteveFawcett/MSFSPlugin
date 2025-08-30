@@ -3,6 +3,7 @@ using BroadcastPluginSDK.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MSFSPlugin.Classes;
+using MSFSPlugin.Controls;
 using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
 using System.Runtime.CompilerServices;
@@ -41,12 +42,25 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
 
         SetMenu(); // Setup context menu
 
-        connect = new FlightSimulator(_displayLogging);
+        var messageWindow = new SimConnectMessageWindow();
+        messageWindow.OnSimConnectMessage += (msg) =>
+        {
+            try
+            {
+                logger?.LogInformation("Received SimConnect message.");
+                connect?.Connection?.ReceiveMessage();
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError($"ReceiveMessage failed: {ex.Message}");
+            }
+        };
+
+        connect = new FlightSimulator(_displayLogging, messageWindow.Handle);
         connect.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
 
         SetupTimer(); // Setup connection timer
 
-        //connect.AddRequests(["PLANE ALTITUDE"]);
     }
 
     private void SetupTimer()
@@ -88,7 +102,8 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
             if (isConnected)
             {
                 _displayLogging?.LogInformation("Connected to Flight Simulator");
-                Icon = Resources.green;
+                Icon = Resources.green; //TODO: Trigger an Icon change
+                connect?.AddRequest("PLANE ALTITUDE", "feet", false);
             }
             else
             {
@@ -130,6 +145,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
         }
     }
 
+
     /// <summary>
     /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>
@@ -138,4 +154,5 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
+
 }

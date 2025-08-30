@@ -59,20 +59,6 @@ namespace MSFSPlugin.Classes
         /// </summary>
         public string? sUnits { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether the request is pending.
-        /// </summary>
-        public bool bPending = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether the request is still pending.
-        /// </summary>
-        public bool bStillPending
-        {
-            set { m_bStillPending = value; }
-            get { return m_bStillPending; }
-        }
-        private bool m_bStillPending = false;
     }
     /// <summary>  
     /// This class is used to pass data from the simulator to the listener.  

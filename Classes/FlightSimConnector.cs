@@ -2,6 +2,7 @@
 using Microsoft.FlightSimulator.SimConnect;
 using MSFSPlugin.Forms;
 using System.Collections.ObjectModel;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
@@ -23,6 +24,8 @@ namespace MSFSPlugin.Classes
         private DisplayLogging? logger = null;
         #endregion
 
+        public SimConnect? Connection { get => m_oSimConnect; }
+
         public event EventHandler<bool>? ConnectionStatusChanged;
         public bool isConnected { get; private set; } = false;
 
@@ -42,7 +45,6 @@ namespace MSFSPlugin.Classes
                         m_oSimConnect.OnRecvSystemState += SimConnect_OnRecvEvent;
                         m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
                         m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
-
                         try
                         {
                             m_oSimConnect.SubscribeToSystemEvent(Event.RECUR_1SEC, "1sec");
@@ -68,63 +70,6 @@ namespace MSFSPlugin.Classes
             return m_oSimConnect is not null;
         }
 
-        private void InternalAddRequest(string _sNewSimvarRequest, string _sNewUnitRequest, bool _bIsString)
-        {
-            logger?.LogInformation($"AddRequest {_sNewSimvarRequest}");
-
-
-            if (!Helpers.ValidateRequest(_sNewSimvarRequest))
-            {
-                logger?.LogError($"Invalid request: {_sNewSimvarRequest}. Skipping.");
-                throw new InvalidSimDataRequestException($"Invalid request: {_sNewSimvarRequest}. Skipping.");
-            }
-
-            if (m_oSimConnect is null)
-            {
-                logger?.LogDebug("SimConnect is not connected. Cannot add request.");
-                throw new SimulatorNotConnectedException("SimConnect is not connected. Cannot add request.");
-            }
-
-            if (lSimvarRequests is null)
-            {
-                lSimvarRequests = [];
-            }
-
-            if (m_iCurrentDefinition >= (uint)DEFINITION.MAX_DEFINITIONS || m_iCurrentRequest >= (uint)REQUEST.MAX_REQUESTS)
-            {
-                logger?.LogError("Maximum definitions or requests reached. Cannot add more.");
-                return;
-            }
-
-            SimvarRequest oSimvarRequest = new()
-            {
-                eDef = (DEFINITION)m_iCurrentDefinition,
-                eRequest = (REQUEST)m_iCurrentRequest,
-                sName = _sNewSimvarRequest,
-                bIsString = _bIsString,
-                sUnits = _bIsString ? null : _sNewUnitRequest
-            };
-
-            try
-            {
-                oSimvarRequest.bPending = !RegisterToSimConnect(oSimvarRequest);
-                oSimvarRequest.bStillPending = oSimvarRequest.bPending;
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"{ex} Failed to register SimvarRequest: {_sNewSimvarRequest}");
-                oSimvarRequest.bPending = true;
-                oSimvarRequest.bStillPending = true;
-            }
-
-            lSimvarRequests.Add(oSimvarRequest);
-
-            lSimvarRequests.Add(oSimvarRequest);
-
-            ++m_iCurrentDefinition;
-            ++m_iCurrentRequest;
-            logger?.LogDebug($"Request {_sNewSimvarRequest} added with Definition ID: {oSimvarRequest.eDef} and Request ID: {oSimvarRequest.eRequest}");
-   }
         private void ReceiveSimConnectMessage()
         {
             try
@@ -140,18 +85,19 @@ namespace MSFSPlugin.Classes
         }
         private bool RegisterToSimConnect(SimvarRequest _oSimvarRequest)
         {
-
             if (m_oSimConnect != null)
             {
                 try
                 {
                     if (_oSimvarRequest.bIsString)
                     {
+                        logger?.LogInformation($"Registering string SimvarRequest: {_oSimvarRequest.sName} with Definition ID: {_oSimvarRequest.eDef} and Request ID: {_oSimvarRequest.eRequest}");
                         m_oSimConnect.AddToDataDefinition(_oSimvarRequest.eDef, _oSimvarRequest.sName, "", SIMCONNECT_DATATYPE.STRING256, 0.0f, SimConnect.SIMCONNECT_UNUSED);
                         m_oSimConnect.RegisterDataDefineStruct<SimvarRequest>(_oSimvarRequest.eDef);
                     }
                     else
                     {
+                        logger?.LogInformation($"Registering double SimvarRequest: {_oSimvarRequest.sName} with Definition ID: {_oSimvarRequest.eDef} and Request ID: {_oSimvarRequest.eRequest}");
                         m_oSimConnect.AddToDataDefinition(_oSimvarRequest.eDef, _oSimvarRequest.sName, _oSimvarRequest.sUnits, SIMCONNECT_DATATYPE.FLOAT64, 0.0f, SimConnect.SIMCONNECT_UNUSED);
                         m_oSimConnect.RegisterDataDefineStruct<double>(_oSimvarRequest.eDef);
                     }
@@ -190,26 +136,16 @@ namespace MSFSPlugin.Classes
         private void SimConnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
             logger?.LogDebug("SimConnect_OnRecvOpen");
-            if (lSimvarRequests is null)
-            {
-                return;
-            }
 
             foreach (SimvarRequest oSimvarRequest in lSimvarRequests)
             {
-                if (oSimvarRequest.bPending)
+                try
                 {
-                    try
-                    {
-                        oSimvarRequest.bPending = !RegisterToSimConnect(oSimvarRequest);
-                        oSimvarRequest.bStillPending = oSimvarRequest.bPending;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.LogError($"{ex} Error processing SimobjectData for {oSimvarRequest.sName}");
-                        oSimvarRequest.bPending = true;
-                        oSimvarRequest.bStillPending = true;
-                    }
+                    RegisterToSimConnect(oSimvarRequest);
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError($"{ex} Error processing SimobjectData for {oSimvarRequest.sName}");
                 }
             }
         }
@@ -273,95 +209,87 @@ namespace MSFSPlugin.Classes
                             {
                                 logger?.LogError($"{ex} Error processing SimobjectData for {oSimvarRequest.sName}");
                             }
-
-                            oSimvarRequest.bPending = false;
-                            oSimvarRequest.bStillPending = false;
                         }
                     }
                 }
             }
-
+            MakeRequests();
         }
 
-        public Dictionary<string, string> AircraftData()
-        {
-            ReceiveSimConnectMessage();
-
-            Dictionary<string, string> ReturnValue = new()
-                {
-                    { "IsConnected", isConnected.ToString() },
-                    { "AircaftLoaded", AircaftLoaded ?? UnknownAircraft }
-                };
-            try
-            {
-                m_oSimConnect?.RequestSystemState(Requests.AIRCRAFT_LOADED, "AircraftLoaded");
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"{ex} Error requesting system state.");
-            }
-
-            if (lSimvarRequests != null)
-            {
-                foreach (SimvarRequest oSimvarRequest in lSimvarRequests)
-                {
-                    if (!oSimvarRequest.bPending)
-                    {
-                        try
-                        {
-                            m_oSimConnect?.RequestDataOnSimObjectType(oSimvarRequest.eRequest, oSimvarRequest.eDef, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
-                            oSimvarRequest.bPending = true;
-                        }
-                        catch (Exception ex)
-                        {
-                            logger?.LogError($"{ex} Error processing SimobjectData for {oSimvarRequest.sName}");
-                        }
-                    }
-                }
-            }
-            return ReturnValue;
-        }
-
-        public void AddRequest(string _sNewSimvarRequest)
-        {
-            try
-            {
-                InternalAddRequest(_sNewSimvarRequest, "", false);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"{ex} Error adding request: {_sNewSimvarRequest}");
-                throw; // Fixes CA2200 by re-throwing the exception without altering the stack trace.
-            }
-        }
-
-        public void AddRequests(List<string> Outputs)
-        {
-            if (Outputs is not null && Outputs.Count > 0)
-            {
-                foreach (string output in Outputs)
-                {
-                    try
-                    {
-                        AddRequest(output);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.LogError($"{ex.Message} Error adding request:{output}" );
-                    }
-                }
-            }
-        }
 
         public void Dispose()
         {
            if( m_oSimConnect is not null ) m_oSimConnect.Dispose();
         }
 
-        public FlightSimulator( DisplayLogging logger )
+        public FlightSimulator( DisplayLogging logger , IntPtr hWnd)
         {
+            this.hWnd = hWnd;
             this.logger = logger;
             lSimvarRequests = [];
         }
+
+        private void MakeRequests()
+        {
+            logger?.LogDebug("Making data requests to SimConnect.");
+
+            foreach (SimvarRequest oSimvarRequest in lSimvarRequests)
+            {
+                try
+                {
+                    logger?.LogDebug($"Requesting data for {oSimvarRequest.sName}");
+                    m_oSimConnect?.RequestDataOnSimObjectType(oSimvarRequest.eRequest, oSimvarRequest.eDef, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
+
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError($"Error requesting data for {oSimvarRequest.sName}");
+                }
+            }   
+        }
+        public void AddRequest(string _sNewSimvarRequest, string _sNewUnitRequest, bool _bIsString)
+        {
+            logger?.LogInformation($"Adding Request {_sNewSimvarRequest} ");
+
+            if (m_oSimConnect is null)
+            {
+                logger?.LogDebug("SimConnect is not connected. Cannot add request.");
+                throw new SimulatorNotConnectedException("SimConnect is not connected. Cannot add request.");
+            }
+
+            if (m_iCurrentDefinition >= (uint)DEFINITION.MAX_DEFINITIONS || m_iCurrentRequest >= (uint)REQUEST.MAX_REQUESTS)
+            {
+                logger?.LogError("Maximum definitions or requests reached. Cannot add more.");
+                return;
+            }
+
+            SimvarRequest oSimvarRequest = new SimvarRequest
+            {
+                eDef = (DEFINITION)m_iCurrentDefinition,
+                eRequest = (REQUEST)m_iCurrentRequest,
+                sName = _sNewSimvarRequest,
+                bIsString = _bIsString,
+                sUnits = _bIsString ? null : _sNewUnitRequest
+            };
+
+            try
+            {
+                logger?.LogDebug($"Registering SimvarRequest: {_sNewSimvarRequest} with Definition ID: {oSimvarRequest.eDef} and Request ID: {oSimvarRequest.eRequest}");
+                RegisterToSimConnect(oSimvarRequest);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError( $"{ex.Message} Failed to register SimvarRequest: {_sNewSimvarRequest}");
+            }
+
+            lSimvarRequests.Add(oSimvarRequest);
+
+            ++m_iCurrentDefinition;
+            ++m_iCurrentRequest;
+            logger?.LogDebug($"Request {_sNewSimvarRequest} added with Definition ID: {oSimvarRequest.eDef} and Request ID: {oSimvarRequest.eRequest}");
+
+            MakeRequests();
+        }
     }
 }
+

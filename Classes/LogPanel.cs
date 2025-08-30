@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
+// TODO: Move this into a tools assembly
 
 namespace MSFSPlugin.Controls
 {
