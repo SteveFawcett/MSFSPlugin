@@ -22,7 +22,7 @@ namespace MSFSPlugin.Classes
         private IntPtr hWnd = IntPtr.Zero;
         private readonly object simvarRequestsLock = new();
         private DisplayLogging? logger = null;
-        private System.Windows.Forms.Timer requestTimer;
+        private System.Windows.Forms.Timer requestTimer = new();
 
         public event EventHandler<Dictionary<string, string>>? DataReceived;
         #endregion
@@ -32,11 +32,8 @@ namespace MSFSPlugin.Classes
         public event EventHandler<bool>? ConnectionStatusChanged;
         public bool isConnected { get; private set; } = false;
 
-        
-
         private void SetupRequestTimer()
         {
-            requestTimer = new();
             requestTimer.Interval = 1000; // 1 second
             requestTimer.Tick += (_, _) => MakeRequests();
             requestTimer.Start();
@@ -262,7 +259,7 @@ namespace MSFSPlugin.Classes
                 }
                 catch (Exception ex)
                 {
-                    logger?.LogError($"Error requesting data for {oSimvarRequest.sName}");
+                    logger?.LogError($"{ex.Message} Error requesting data for {oSimvarRequest.sName}");
                 }
             }   
         }

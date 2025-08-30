@@ -11,8 +11,6 @@ namespace MSFSPlugin.Controls
 
         private void InitializeComponent()
         {
-            showDebug = new CheckBox();
-            logBox = new RichTextBox();
             SuspendLayout();
 
             // 
@@ -52,6 +50,9 @@ namespace MSFSPlugin.Controls
 
         public LogPanel()
         {
+            showDebug = new CheckBox();
+            logBox = new RichTextBox();
+
             InitializeComponent();
         }
 
