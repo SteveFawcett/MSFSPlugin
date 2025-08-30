@@ -7,22 +7,51 @@ namespace MSFSPlugin.Controls
 {
     public class LogPanel : UserControl
     {
-        private readonly RichTextBox _logBox;
+
+        private void InitializeComponent()
+        {
+            showDebug = new CheckBox();
+            logBox = new RichTextBox();
+            SuspendLayout();
+
+            // 
+            // showDebug
+            // 
+            showDebug.Dock = DockStyle.Bottom;
+            showDebug.AutoSize = true;
+            showDebug.Padding = new Padding(9, 3, 0, 3); // Optional: adds spacing
+            showDebug.Name = "showDebug";
+            showDebug.Text = "Show Debug";
+            showDebug.UseVisualStyleBackColor = true;
+
+            // 
+            // logBox
+            // 
+            logBox.Dock = DockStyle.Fill;
+            logBox.BackColor = Color.WhiteSmoke;
+            logBox.BorderStyle = BorderStyle.None;
+            logBox.Font = new Font("Consolas", 10F);
+            logBox.HideSelection = false;
+            logBox.ReadOnly = true;
+            logBox.Name = "logBox";
+            logBox.Text = "";
+
+            // 
+            // LogPanel
+            // 
+            Controls.Add(logBox);      // Add logBox first so it fills remaining space
+            Controls.Add(showDebug);   // Add checkbox last so it docks to bottom
+            Name = "LogPanel";
+            Size = new Size(552, 316);
+
+            ResumeLayout(false);
+            PerformLayout();
+        }
+
 
         public LogPanel()
         {
-            _logBox = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                BorderStyle = BorderStyle.None,
-                BackColor = Color.Black,
-                ForeColor = Color.White,
-                Font = new Font("Consolas", 10),
-                HideSelection = false
-            };
-
-            Controls.Add(_logBox);
+            InitializeComponent();
         }
 
         private readonly Dictionary<string, Color> _logColors = new()
@@ -33,18 +62,18 @@ namespace MSFSPlugin.Controls
             { "DEBUG", Color.Blue }
         };
 
-        public void LogInfo(string message) => AppendLog(message, _logColors["INFO"], "INFO");
+        public void LogInformation(string message) => AppendLog(message, _logColors["INFO"], "INFO");
         public void LogWarning(string message) => AppendLog(message, _logColors["WARN"], "WARN");
         public void LogError(string message) => AppendLog(message, _logColors["ERROR"], "ERROR");
         public void LogDebug(string message) => AppendLog(message, _logColors["DEBUG"], "DEBUG");
 
-        public void ClearLog() => _logBox.Clear();
+        public void ClearLog() => logBox.Clear();
 
         private void AppendLog(string message, Color color, string level)
         {
-            if (_logBox.InvokeRequired)
+            if (logBox.InvokeRequired)
             {
-                _logBox.Invoke(new Action(() => AppendLogInternal(message, color, level)));
+                logBox.Invoke(new Action(() => AppendLogInternal(message, color, level)));
             }
             else
             {
@@ -54,21 +83,27 @@ namespace MSFSPlugin.Controls
 
         private void AppendLogInternal(string message, Color color, string level)
         {
+            if (level == "DEBUG" && !showDebug.Checked)
+            {
+                return; // Skip debug messages if the checkbox is not checked
+            }
             string timestamp = DateTime.Now.ToString("HH:mm:ss");
             string prefix = $"[{timestamp}] [{level}] ";
 
-            int start = _logBox.TextLength;
-            _logBox.SelectionStart = start;
-            _logBox.SelectionLength = 0;
+            int start = logBox.TextLength;
+            logBox.SelectionStart = start;
+            logBox.SelectionLength = 0;
 
-            _logBox.SelectionColor = Color.Gray;
-            _logBox.AppendText(prefix);
+            logBox.SelectionColor = Color.Gray;
+            logBox.AppendText(prefix);
 
-            _logBox.SelectionColor = color;
-            _logBox.AppendText(message + Environment.NewLine);
+            logBox.SelectionColor = color;
+            logBox.AppendText(message + Environment.NewLine);
 
-            _logBox.SelectionColor = _logBox.ForeColor;
-            _logBox.ScrollToCaret();
+            logBox.SelectionColor = logBox.ForeColor;
+            logBox.ScrollToCaret();
         }
+        private CheckBox showDebug;
+        private RichTextBox logBox;
     }
 }

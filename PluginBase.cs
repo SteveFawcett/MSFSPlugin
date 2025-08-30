@@ -66,7 +66,7 @@ public partial class PluginBase : BroadcastPluginBase, IManager, IDisposable
     {
         lock (connectionLock)
         {
-            if (isConnected || connect is null) return;
+            if (connect == null) return;
 
             try
             {

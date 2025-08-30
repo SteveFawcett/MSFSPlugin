@@ -5,22 +5,25 @@ using System.Diagnostics;
 
 namespace MSFSPlugin.Forms
 {
-    public partial class DisplayLogging : UserControl
+    public partial class DisplayLogging : LogPanel
     {
+        ILogger<IPlugin>? _logger;
 
-        public void LogInformation( string value) { MsgTxtBox.LogInfo(value); }
-        public void LogDebug(string value) { MsgTxtBox.LogDebug(value); }
+        private void InitializeComponent()
+        {
+            SuspendLayout();
+            // 
+            // DisplayLogging
+            // 
+            Name = "DisplayLogging";
+            Size = new Size(703, 348);
+            ResumeLayout(false);
 
-        public void LogError(string value) { MsgTxtBox.LogError(value); }
+        }
 
-        public void LogWarning(string value) { MsgTxtBox.LogWarning(value); }
-
-        ILogger<IPlugin> _logger;
-
-        public DisplayLogging( ILogger<IPlugin> logger)
+        public DisplayLogging(ILogger<IPlugin>? logger = null) : base()
         {
             _logger = logger;
-            InitializeComponent();
         }
     }
 
