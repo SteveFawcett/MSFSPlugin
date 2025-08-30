@@ -6,7 +6,7 @@ namespace MSFSPlugin.Classes
 {
     internal class SimSdkLoader
     {
-        private static object? simConnect;
+        // private static object? simConnect;
         private static Type? simConnectType;
         private static Type? simConnectDatatypeEnum;
         private static Assembly? simConnectAssembly;
