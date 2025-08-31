@@ -68,10 +68,9 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     }
 
-    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, object> e)
+    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
     {
-        var stringData = e.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString() ?? string.Empty);
-        DataReceived?.Invoke(this, stringData);
+        DataReceived?.Invoke(this, e);
     }
 
     private void SetupTimer()

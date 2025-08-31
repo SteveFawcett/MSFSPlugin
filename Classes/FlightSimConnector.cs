@@ -22,7 +22,7 @@ namespace MSFSPlugin.Classes
 
 
         private uint nextId = 1000;
-        public event EventHandler<Dictionary<string, object>>? DataReceived;
+        public event EventHandler<Dictionary<string, string>>? DataReceived;
         #endregion
 
         public SimConnect? Connection { get => m_oSimConnect; }
@@ -124,27 +124,23 @@ namespace MSFSPlugin.Classes
                 if (!requestManager.TryGetByRequestId((REQUEST)data.dwRequestID, out var request) || request is null)
                     return;
 
+                dynamic value = string.Empty;
 
-                // Fix: data.dwData is object[], so extract the first element and cast to ResultStructure
-                if (data.dwData is object[] arr && arr.Length > 0)
+                if (request.DataTypeName.Equals("STRING256", StringComparison.OrdinalIgnoreCase))
                 {
-                    if ( request.DataTypeName.Equals("STRING256", StringComparison.OrdinalIgnoreCase) )
-                    {
-                        SimVarStringStruct s = (SimVarStringStruct)data.dwData[0];
-                        var value = s.Value;
-                        logger?.LogDebug($"Received string value for {request.Name}: {value}");
-                        requestManager.UpdateValue(request.Name, value);
-                        DataReceived?.Invoke(this, new Dictionary<string, object> { { request.Name, value } });
-                    }
-                    if (request.DataTypeName.Equals("FLOAT32", StringComparison.OrdinalIgnoreCase))
-                    {
-                        SimVarStruct d = (SimVarStruct)data.dwData[0];
-                        var value = d.Value;
-                        logger?.LogDebug($"Received double value for {request.Name}: {value}");
-                        requestManager.UpdateValue(request.Name, value);
-                        DataReceived?.Invoke(this, new Dictionary<string, object> { { request.Name, value } });
-                    }
+                    SimVarStringStruct s = (SimVarStringStruct)data.dwData[0];
+                    value = s.Value;
                 }
+                else if (request.DataTypeName.Equals("FLOAT32", StringComparison.OrdinalIgnoreCase))
+                {
+                    SimVarStruct d = (SimVarStruct)data.dwData[0];
+                    value = d.Value.ToString();
+                }
+
+                logger?.LogDebug($"Received {value.GetType().Name} value for {request.Name}: {value}");
+                requestManager.UpdateValue(request.Name, value);
+                DataReceived?.Invoke(this, new Dictionary<string, string> { { request.Name, value } });
+
 
             }
             catch (Exception ex)
