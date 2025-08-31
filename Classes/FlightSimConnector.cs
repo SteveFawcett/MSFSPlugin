@@ -191,7 +191,7 @@ namespace MSFSPlugin.Classes
                 }
             }
         }
-        public void AddRequest(string name, string unit, string type)
+        public void AddRequest(string name, string unit, string type = "FLOAT32")
         {
             if (m_oSimConnect is null || isConnected is false) return;
 
@@ -200,12 +200,18 @@ namespace MSFSPlugin.Classes
             var requestId = nextId++;
             var definitionId = nextId++;
 
+            if (!Enum.TryParse<SIMCONNECT_DATATYPE>(type, out var datatype))
+            {
+                logger?.LogWarning($"Unsupported data type '{type}' for {name}. Defaulting to FLOAT32.");
+                datatype = SIMCONNECT_DATATYPE.FLOAT32;
+            }
+
             SimVarRequest oSimvarRequest = new SimVarRequest
             {
                 DefinitionId = (DEFINITION)definitionId,
                 RequestId = (REQUEST)requestId,
                 Name = name,
-                DataTypeName = SIMCONNECT_DATATYPE.FLOAT32.ToString(),
+                DataTypeName = datatype.ToString(),
                 Unit = unit
             };
 
@@ -216,10 +222,10 @@ namespace MSFSPlugin.Classes
                              $"Request ID: {oSimvarRequest.RequestId}, ");
 
    
-            m_oSimConnect.AddToDataDefinition(oSimvarRequest.DefinitionId, oSimvarRequest.Name, "", SIMCONNECT_DATATYPE.FLOAT32, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            m_oSimConnect.AddToDataDefinition(oSimvarRequest.DefinitionId, oSimvarRequest.Name, "", datatype, 0.0f, SimConnect.SIMCONNECT_UNUSED);
          
-            if (oSimvarRequest.DataTypeName.Equals("STRING256", StringComparison.OrdinalIgnoreCase))
-                 m_oSimConnect.RegisterDataDefineStruct<SimVarStringStruct>(oSimvarRequest.DefinitionId);
+            if ( datatype == SIMCONNECT_DATATYPE.STRING256 )
+                m_oSimConnect.RegisterDataDefineStruct<SimVarStringStruct>(oSimvarRequest.DefinitionId);
             else
                 m_oSimConnect.RegisterDataDefineStruct<SimVarStruct>( oSimvarRequest.DefinitionId);
 

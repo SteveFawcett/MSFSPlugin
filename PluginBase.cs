@@ -138,7 +138,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
             if (config.Key == "export")
                 foreach (var dataSet in config.GetChildren())
                 {
-                    connect?.AddRequest(dataSet["variable"] ?? "Not Known", dataSet["measure"] ?? "feet",  "FLOAT32" ) ;
+                    connect?.AddRequest(dataSet["variable"] ?? "Not Known", dataSet["measure"] ?? "feet" ) ;
                 }
                    
     }
