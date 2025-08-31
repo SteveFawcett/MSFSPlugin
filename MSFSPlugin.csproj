@@ -15,7 +15,7 @@
 		<PackageDir Condition="'$(PackageDir)' == ''">$([System.IO.Path]::Combine($(OutputDirectory),''))/</PackageDir>
 		<PackageFileName>$(AssemblyName)-v$(AssemblyVersion).zip</PackageFileName>
 		<PackagePath>$(PackageDir)\$(PackageFileName)</PackagePath>
-		
+		<RemotePath>Z:\Plugins</RemotePath>
 		<AssemblyVersion>0.0.0</AssemblyVersion>
 		<SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
 		<RepositoryType>git</RepositoryType>
@@ -53,6 +53,11 @@
 				<CopyToPublishDirectory>Always</CopyToPublishDirectory>
 			</DynamicContent>
 		</ItemGroup>
+	</Target>
+	
+	<Target Name="Deliver" AfterTargets="Publish">
+		<Message Importance="High" Text="📦 Copying to remote [$(RemotePath)] " />
+		<Copy SourceFiles="$(PackagePath)" DestinationFolder="$(RemotePath)" />
 	</Target>
 
 		<ItemGroup>

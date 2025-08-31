@@ -12,10 +12,19 @@ namespace MSFSPlugin.Controls
         private void InitializeComponent()
         {
             SuspendLayout();
+            // 
+            // LogPanel
+            // 
+            Name = "LogPanel";
+            Size = new Size(969, 316);
+            ResumeLayout(false);
+        }
 
-            // 
-            // showDebug
-            // 
+
+        public LogPanel()
+        {
+            showDebug = new CheckBox();
+            showDebug.Checked = true;
             showDebug.Dock = DockStyle.Bottom;
             showDebug.AutoSize = true;
             showDebug.Padding = new Padding(9, 3, 0, 3); // Optional: adds spacing
@@ -23,9 +32,7 @@ namespace MSFSPlugin.Controls
             showDebug.Text = "Show Debug";
             showDebug.UseVisualStyleBackColor = true;
 
-            // 
-            // logBox
-            // 
+            logBox = new RichTextBox();
             logBox.Dock = DockStyle.Fill;
             logBox.BackColor = Color.WhiteSmoke;
             logBox.BorderStyle = BorderStyle.None;
@@ -35,25 +42,10 @@ namespace MSFSPlugin.Controls
             logBox.Name = "logBox";
             logBox.Text = "";
 
-            // 
-            // LogPanel
-            // 
-            Controls.Add(logBox);      // Add logBox first so it fills remaining space
-            Controls.Add(showDebug);   // Add checkbox last so it docks to bottom
-            Name = "LogPanel";
-            Size = new Size(552, 316);
-
-            ResumeLayout(false);
-            PerformLayout();
-        }
-
-
-        public LogPanel()
-        {
-            showDebug = new CheckBox();
-            logBox = new RichTextBox();
-
             InitializeComponent();
+
+            this.Controls.Add(showDebug);
+            this.Controls.Add(logBox);
         }
 
         private readonly Dictionary<string, Color> _logColors = new()

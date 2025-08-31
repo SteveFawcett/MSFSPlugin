@@ -68,9 +68,10 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     }
 
-    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
+    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, object> e)
     {
-       DataReceived?.Invoke(this, e);
+        var stringData = e.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToString() ?? string.Empty);
+        DataReceived?.Invoke(this, stringData);
     }
 
     private void SetupTimer()
@@ -83,6 +84,8 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
+        if( connect is not null && connect.isConnected ) return; // Already connected
+
         SimulatorReconnect();        
     }
 
@@ -95,11 +98,13 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
             try
             {
                 _displayLogging?.LogDebug("SimulatorReconnect() was called by timer.");
+                if (isConnected) return; // Already connected
+                _displayLogging?.LogInformation("Attempting to connect to Flight Simulator...");
                 isConnected = connect.ConnectToSim();
             }
             catch (Exception ex)
             {
-                _displayLogging?.LogError($"Error during SimulatorReconnect: {ex.Message}");
+                _displayLogging?.LogError($"Error during Simulator Reconnect: {ex.Message}");
             }
         }
     }
@@ -108,6 +113,8 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     {
         lock (connectionLock)
         {
+            if( isConnected == newConnectionStatus ) return;
+
             isConnected = newConnectionStatus;
             if (isConnected)
             {
@@ -131,7 +138,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
             if (config.Key == "export")
                 foreach (var dataSet in config.GetChildren())
                 {
-                    connect?.AddRequest(dataSet["variable"] ?? "Not Known", dataSet["measure"] ?? "feet", bool.Parse(dataSet["string"] ?? "false"));
+                    connect?.AddRequest(dataSet["variable"] ?? "Not Known", dataSet["measure"] ?? "feet",  "FLOAT32" ) ;
                 }
                    
     }
