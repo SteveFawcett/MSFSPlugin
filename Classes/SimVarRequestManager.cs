@@ -1,8 +1,18 @@
 ﻿using MSFSPlugin.Models;
 using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SimVarStruct { public double Value; }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    public struct SimVarStringStruct
+    {
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+        public string Value;
+    }
     public class SimVarRequest
     {
         public string Name { get; set; } = string.Empty;
@@ -47,7 +57,6 @@ namespace MSFSPlugin.Classes
                 ;
             }
         }
-
         public void Clear()
         {
             requests.Clear();

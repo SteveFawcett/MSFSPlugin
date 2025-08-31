@@ -13,15 +13,6 @@ namespace MSFSPlugin.Models
     public enum DEFINITION
     {
         Dummy = 0,
-        INT32 = 101,
-        INT64 = 102,
-        FLOAT32 = 103,
-        FLOAT64 = 104,
-        STRING8 = 105,
-        STRING32 = 106,
-        STRING64 = 107,
-        STRING128 = 108,
-        STRING256 = 109
     };
     internal enum Event
     {
