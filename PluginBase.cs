@@ -131,7 +131,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     private void LoadExportedVariables()
     {
-        if( _configuration is null ) return;
+        if (_configuration is null) return;
 
         foreach (var config in _configuration.GetSection("MSFS").GetChildren())
             if (config.Key == "export")
