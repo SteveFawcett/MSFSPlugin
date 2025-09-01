@@ -37,41 +37,49 @@ namespace MSFSPlugin.Classes
 
             if (m_oSimConnect is null)
             {
-                try
-                {
-                    m_oSimConnect = new SimConnect("SimListener", hWnd, WM_USER_SIMCONNECT, null, 0);
-
-                    if (m_oSimConnect is not null)
-                    {
-                        logger?.LogInformation("SimConnect connection established.");
-
-                        m_oSimConnect.OnRecvOpen += SimConnect_OnRecvOpen;
-                        m_oSimConnect.OnRecvSimobjectDataBytype += HandleSimData;
-                        m_oSimConnect.OnRecvEvent += SimConnect_OnRecvEvent;
-                        m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
-                        m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
-                        try
-                        {
-                            m_oSimConnect.SubscribeToSystemEvent(Event.RECUR_1SEC, "1sec");
-                        }
-                        catch (Exception ex)
-                        {
-                            logger?.LogError($"{ex.Message}: Failed to subscribe to system event.");
-                        }
-                    }
-                }
-                catch (COMException)
-                {
-                    logger?.LogError("SimConnect connection failed. Is MSFS running?");
-                }
-                catch (Exception)
-                {
-                    logger?.LogError("Unexpected error during SimConnect connection.");
-                }
+                InitializeSimConnect();
             }
 
             UpdateConnectionStatus(m_oSimConnect is not null);
             return m_oSimConnect is not null;
+        }
+
+        /// <summary>
+        /// Initializes the SimConnect connection and sets up event handlers.
+        /// </summary>
+        private void InitializeSimConnect()
+        {
+            try
+            {
+                m_oSimConnect = new SimConnect("SimListener", hWnd, WM_USER_SIMCONNECT, null, 0);
+
+                if (m_oSimConnect is not null)
+                {
+                    logger?.LogInformation("SimConnect connection established.");
+
+                    m_oSimConnect.OnRecvOpen += SimConnect_OnRecvOpen;
+                    m_oSimConnect.OnRecvSimobjectDataBytype += HandleSimData;
+                    m_oSimConnect.OnRecvEvent += SimConnect_OnRecvEvent;
+                    m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
+                    m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
+                    try
+                    {
+                        m_oSimConnect.SubscribeToSystemEvent(Event.RECUR_1SEC, "1sec");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.LogError($"{ex.Message}: Failed to subscribe to system event.");
+                    }
+                }
+            }
+            catch (COMException)
+            {
+                logger?.LogError("SimConnect connection failed. Is MSFS running?");
+            }
+            catch (Exception)
+            {
+                logger?.LogError("Unexpected error during SimConnect connection.");
+            }
         }
 
         private void SimConnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
