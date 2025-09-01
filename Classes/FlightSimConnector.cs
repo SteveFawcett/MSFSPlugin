@@ -76,14 +76,14 @@ namespace MSFSPlugin.Classes
 
         private void SimConnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
-            logger?.LogInformation("Recieved Quit Message");
+            logger?.LogInformation("Received Quit Message");
             UpdateConnectionStatus(false);
         }
 
         private void SimConnect_OnRecvException(SimConnect sender, SIMCONNECT_RECV_EXCEPTION data)
         {
             // TODO: Need to capture exceptions and handle them
-            // logger?.LogInformation("Recieved Exception Message");    
+            // logger?.LogInformation("Received Exception Message");    
             // UpdateConnectionStatus(false);
         }
 
