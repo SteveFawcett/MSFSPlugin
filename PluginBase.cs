@@ -112,7 +112,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     {
         lock (connectionLock)
         {
-            if( isConnected == newConnectionStatus ) return;
+            if ( isConnected == newConnectionStatus ) return;
 
             isConnected = newConnectionStatus;
             if (isConnected)
