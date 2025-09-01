@@ -1,6 +1,5 @@
 ﻿using Microsoft.FlightSimulator.SimConnect;
 using MSFSPlugin.Forms;
-using MSFSPlugin.Models;
 using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
@@ -14,22 +13,19 @@ namespace MSFSPlugin.Classes
         private const uint WM_USER_SIMCONNECT = 0x0402;
 
         #region Private variables
+        private MeasurementUnits measurementUnits = new MeasurementUnits();
         private SimConnect? m_oSimConnect = null;
         private IntPtr hWnd = IntPtr.Zero;
         private DisplayLogging? logger = null;
         private System.Windows.Forms.Timer requestTimer = new();
-        private readonly SimvarRequestManager requestManager = new();
-
-
+        private readonly SimVarRequestRegistry requestManager = new();
         private uint nextId = 1000;
         public event EventHandler<Dictionary<string, string>>? DataReceived;
         #endregion
 
         public SimConnect? Connection { get => m_oSimConnect; }
-
         public event EventHandler<bool>? ConnectionStatusChanged;
         public bool isConnected { get; private set; } = false;
-
         public bool ConnectToSim()
         {
             if (hWnd == IntPtr.Zero)
@@ -62,7 +58,6 @@ namespace MSFSPlugin.Classes
                         {
                             logger?.LogError($"{ex.Message}: Failed to subscribe to system event.");
                         }
-
                     }
                 }
                 catch (COMException)
@@ -104,7 +99,6 @@ namespace MSFSPlugin.Classes
         private void SimConnect_OnRecvOpen(SimConnect sender, SIMCONNECT_RECV_OPEN data)
         {
             logger?.LogDebug("SimConnect_OnRecvOpen");
-
         }
         private void SimConnect_OnRecvEvent(SimConnect sender, SIMCONNECT_RECV_EVENT recEvent)
         {
@@ -113,7 +107,6 @@ namespace MSFSPlugin.Classes
                 MakeRequests();
             }
         }
-
 
         private void HandleSimData(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE data)
         {
@@ -124,7 +117,7 @@ namespace MSFSPlugin.Classes
                 if (!requestManager.TryGetByRequestId((REQUEST)data.dwRequestID, out var request) || request is null)
                     return;
 
-                dynamic value = string.Empty;
+                string value = string.Empty;
 
                 if (request.DataTypeName.Equals("STRING256", StringComparison.OrdinalIgnoreCase))
                 {
@@ -133,15 +126,13 @@ namespace MSFSPlugin.Classes
                 }
                 else if (request.DataTypeName.Equals("FLOAT32", StringComparison.OrdinalIgnoreCase))
                 {
-                    SimVarStruct d = (SimVarStruct)data.dwData[0];
-                    value = d.Value.ToString();
+                    double d = (double)data.dwData[0];
+                    value = d.ToString();
                 }
 
                 logger?.LogDebug($"Received {value.GetType().Name} value for {request.Name}: {value}");
                 requestManager.UpdateValue(request.Name, value);
                 DataReceived?.Invoke(this, new Dictionary<string, string> { { request.Name, value } });
-
-
             }
             catch (Exception ex)
             {
@@ -159,7 +150,6 @@ namespace MSFSPlugin.Classes
             this.hWnd = hWnd;
             this.logger = logger;
         }
-
         private void MakeRequests()
         {
             if (m_oSimConnect is null)
@@ -187,28 +177,30 @@ namespace MSFSPlugin.Classes
                 }
             }
         }
-        public void AddRequest(string name, string unit, string type = "FLOAT32")
+        public void AddRequest(string name )
         {
             if (m_oSimConnect is null || isConnected is false) return;
 
-            logger?.LogInformation($"Adding Request {name} ");
+            Datum Measure = measurementUnits.FindUnitByName(name);
+
+            if (!Enum.TryParse<SIMCONNECT_DATATYPE>(Measure.Type, true, out var datatype))
+            {
+                logger?.LogError($"Unknown SIMCONNECT_DATATYPE: {Measure.Type} for {name}");
+                return;
+            }
+
+            logger?.LogInformation($"Adding Request {Measure.Name} : {Measure.Measure} , {Measure.Type} ");
 
             var requestId = nextId++;
             var definitionId = nextId++;
-
-            if (!Enum.TryParse<SIMCONNECT_DATATYPE>(type, out var datatype))
-            {
-                logger?.LogWarning($"Unsupported data type '{type}' for {name}. Defaulting to FLOAT32.");
-                datatype = SIMCONNECT_DATATYPE.FLOAT32;
-            }
 
             SimVarRequest oSimvarRequest = new SimVarRequest
             {
                 DefinitionId = (DEFINITION)definitionId,
                 RequestId = (REQUEST)requestId,
                 Name = name,
-                DataTypeName = datatype.ToString(),
-                Unit = unit
+                DataTypeName = Measure.Type,
+                Unit = Measure.Measure
             };
 
             requestManager.RegisterRequest(oSimvarRequest);
@@ -223,7 +215,7 @@ namespace MSFSPlugin.Classes
             if ( datatype == SIMCONNECT_DATATYPE.STRING256 )
                 m_oSimConnect.RegisterDataDefineStruct<SimVarStringStruct>(oSimvarRequest.DefinitionId);
             else
-                m_oSimConnect.RegisterDataDefineStruct<SimVarStruct>( oSimvarRequest.DefinitionId);
+                m_oSimConnect.RegisterDataDefineStruct<double>( oSimvarRequest.DefinitionId);
 
             MakeRequests();
 

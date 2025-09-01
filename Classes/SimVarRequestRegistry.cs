@@ -1,11 +1,29 @@
-﻿using MSFSPlugin.Models;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SimVarStruct { public double Value; }
+    public enum REQUEST
+    {
+        Dummy = 0,
+        ResultStructure,
+        MAX_REQUESTS = 100
+    };
+
+    public enum DEFINITION
+    {
+        Dummy = 0,
+    };
+    internal enum Event
+    {
+        RECUR_1SEC,
+    }
+
+    internal enum Requests
+    {
+        SIMULATION,
+        AIRCRAFT_LOADED,
+    }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
     public struct SimVarStringStruct
@@ -23,7 +41,7 @@ namespace MSFSPlugin.Classes
         public object? Value { get; set; }
         public bool IsString => true;
     }
-    public class SimvarRequestManager
+    public class SimVarRequestRegistry
     {
         private readonly ConcurrentDictionary<string, SimVarRequest> requests = new();
         private readonly ConcurrentDictionary<REQUEST, SimVarRequest> requestIdMap = new();

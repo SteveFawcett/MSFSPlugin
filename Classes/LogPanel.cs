@@ -24,7 +24,7 @@ namespace MSFSPlugin.Controls
         public LogPanel()
         {
             showDebug = new CheckBox();
-            showDebug.Checked = true;
+            showDebug.Checked = false;
             showDebug.Dock = DockStyle.Bottom;
             showDebug.AutoSize = true;
             showDebug.Padding = new Padding(9, 3, 0, 3); // Optional: adds spacing

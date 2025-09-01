@@ -1,6 +1,7 @@
-﻿
-
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
 {
@@ -17,29 +18,42 @@ namespace MSFSPlugin.Classes
 
             return value;
         }
+    }
 
-        public static bool ValidateRequest(string request)
+    public static class NativeLoader
+    {
+        [DllImport("kernel32", SetLastError = true)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+
+        public static IntPtr LoadEmbeddedDll(string resourceName, string path, string dllFileName)
         {
-            string trimmedRequest;
-            string trimmedIndex;
+            string dllPath = Path.Combine(path, dllFileName);
 
-            if (request?.Split(":").Length < 2)
+            Debug.WriteLine($"[NativeLoader] Target path: {dllPath}");
+
+            // Load the native DLL
+            IntPtr handle = LoadLibrary(dllPath);
+            if (handle == IntPtr.Zero)
             {
-                // If no index is provided, default to "0"
-                trimmedRequest = request ?? "";
-                trimmedIndex = "1";
-            }
-            else
-            {
-                trimmedRequest = request?.Split(":")[0] ?? "";
-                trimmedIndex = request?.Split(":")[1] ?? "1";
+                int error = Marshal.GetLastWin32Error();
+                throw new InvalidOperationException($"Failed to load native DLL '{dllFileName}'. Win32 Error: {error}");
             }
 
-            if (!int.TryParse(trimmedIndex, out int index)) return false;
+            Debug.WriteLine($"[NativeLoader] LoadLibrary succeeded. Handle: 0x{handle.ToInt64():X}");
+            return handle;
+        }
+    }
 
-            if (index < 1 || index > 10) return false;
+    public static class EmbeddedAssemblyLoader
+    {
+        public static Assembly LoadManagedAssembly(string path, string dll)
+        {
+            path = Path.Combine(path, dll);
+            Debug.WriteLine($"[EmbeddedAssemblyLoader] Loading managed assembly from: {path}");
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Assembly file not found at path: {path}");
 
-            return !string.IsNullOrWhiteSpace(request) && SimVars.Names.Contains(trimmedRequest);
+            return Assembly.LoadFrom(path);
         }
     }
 }
