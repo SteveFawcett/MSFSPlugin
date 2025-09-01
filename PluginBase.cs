@@ -52,7 +52,6 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
         {
             try
             {
-                logger?.LogInformation("Received SimConnect message.");
                 connect?.Connection?.ReceiveMessage();
             }
             catch (Exception ex)

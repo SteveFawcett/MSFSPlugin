@@ -24,8 +24,8 @@
 		<PackageTags>simulator;broadcast</PackageTags>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageIcon>airplane.png</PackageIcon>
-		<PackageProjectUrl>https://github.com/SteveFawcett/TestPlugin</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/SteveFawcett/TestPlugin</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/SteveFawcett/</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/SteveFawcett/</RepositoryUrl>
 		<Platforms>x64</Platforms>
 	</PropertyGroup>
 
@@ -70,7 +70,7 @@
   </ItemGroup>
 
 	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="BroadcastPluginSDK" Version="1.1.1" />
+		<PackageReference Include="BroadcastPluginSDK" Version="1.1.2" />
 	</ItemGroup>
 	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
 		<ProjectReference Include="..\..\sfawcett123\BroadcastPluginSDK\BroadcastPluginSDK.csproj" />
