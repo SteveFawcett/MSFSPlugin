@@ -83,7 +83,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
     {
-        if( connect is not null && connect.isConnected ) return; // Already connected
+        if ( connect is not null && connect.isConnected ) return; // Already connected
 
         SimulatorReconnect();        
     }
