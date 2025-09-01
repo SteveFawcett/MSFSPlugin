@@ -71,8 +71,6 @@ namespace MSFSPlugin.Classes
                 {
                     request.Value = value;
                     RequestUpdated?.Invoke(request);
-                }
-                ;
             }
         }
         public void Clear()
