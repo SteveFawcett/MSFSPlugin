@@ -12,6 +12,16 @@ public class MeasurementUnits
 
     public Datum FindUnitByName(string name)
     {
+        if( string.IsNullOrWhiteSpace(name))
+        {
+            return new Datum
+            {
+                Name = name,
+                Measure = "",
+                Type = "FLOAT32"
+            };
+        }
+
         if (UnitsByName.TryGetValue(name, out var unit))
         {
             return new Datum

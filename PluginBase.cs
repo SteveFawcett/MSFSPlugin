@@ -8,6 +8,7 @@ using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
 using System.Configuration;
 using System.Data;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Timers;
 
@@ -67,6 +68,13 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     }
 
+    public void SetState(bool isConnected = false)
+    {
+        base.Icon = isConnected ? Resources.green : Resources.red;
+
+        ImageChangedInvoke(base.Icon);
+
+    }
     private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
     {
         DataReceived?.Invoke(this, e);
@@ -99,6 +107,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
                 if (isConnected) return; // Already connected
                 _displayLogging?.LogInformation("Attempting to connect to Flight Simulator...");
                 isConnected = connect.ConnectToSim();
+                SetState( isConnected);
             }
             catch (Exception ex)
             {
@@ -109,24 +118,22 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
 
     private void Connector_ConnectionStatusChanged(object? sender, bool newConnectionStatus)
     {
-        lock (connectionLock)
-        {
-            if ( isConnected == newConnectionStatus ) return;
+        if ( isConnected == newConnectionStatus ) return;
 
-            isConnected = newConnectionStatus;
-            if (isConnected)
-            {
-                _displayLogging?.LogInformation("Connected to Flight Simulator");
-                Icon = Resources.green; //TODO: Trigger an Icon change
-                LoadExportedVariables();
-            }
-            else
-            {
-                _displayLogging?.LogWarning("Disconnected from Flight Simulator");
-                Icon = Resources.red;
-            }
+        isConnected = newConnectionStatus;
+        if (isConnected)
+        {
+            _displayLogging?.LogInformation("Connected to Flight Simulator");
+            LoadExportedVariables();
+            SetState(isConnected);
+
         }
-    }
+        else
+        {
+            _displayLogging?.LogWarning("Disconnected from Flight Simulator");
+            SetState(isConnected);
+        }
+}
 
     private void LoadExportedVariables()
     {
