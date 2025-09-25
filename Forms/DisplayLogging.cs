@@ -1,7 +1,6 @@
 ﻿using BroadcastPluginSDK.Interfaces;
+using CyberDog.Controls;
 using Microsoft.Extensions.Logging;
-using MSFSPlugin.Controls;
-using System.Diagnostics;
 
 namespace MSFSPlugin.Forms
 {

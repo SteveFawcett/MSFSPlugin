@@ -3,13 +3,8 @@ using BroadcastPluginSDK.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MSFSPlugin.Classes;
-using MSFSPlugin.Controls;
 using MSFSPlugin.Forms;
 using MSFSPlugin.Properties;
-using System.Configuration;
-using System.Data;
-using System.Drawing;
-using System.Runtime.CompilerServices;
 using System.Timers;
 
 namespace MSFSPlugin;
