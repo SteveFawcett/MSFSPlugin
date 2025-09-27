@@ -1,4 +1,5 @@
-﻿using Microsoft.FlightSimulator.SimConnect;
+﻿using BroadcastPluginSDK.Interfaces;
+using Microsoft.FlightSimulator.SimConnect;
 using MSFSPlugin.Forms;
 using System.Runtime.InteropServices;
 
@@ -20,7 +21,7 @@ namespace MSFSPlugin.Classes
         private System.Windows.Forms.Timer requestTimer = new();
         private readonly SimVarRequestRegistry requestManager = new();
         private uint nextId = 1000;
-        public event EventHandler<Dictionary<string, string>>? DataReceived;
+        public event EventHandler<CacheData>? DataReceived;
         #endregion
 
         public SimConnect? Connection { get => m_oSimConnect; }
@@ -140,7 +141,14 @@ namespace MSFSPlugin.Classes
 
                 logger?.LogDebug($"Received {value.GetType().Name} value for {request.Name}: {value}");
                 requestManager.UpdateValue(request.Name, value);
-                DataReceived?.Invoke(this, new Dictionary<string, string> { { request.Name, value } });
+
+                var send = new CacheData()
+                {
+                    Data = new Dictionary<string, string> { { request.Name, value } },
+                    Prefix = CachePrefixes.DATA
+                };
+
+                DataReceived?.Invoke(this, send );
             }
             catch (Exception ex)
             {

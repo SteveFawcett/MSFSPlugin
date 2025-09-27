@@ -20,7 +20,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     private bool isConnected = false;
     private bool disposedValue;
     private readonly object connectionLock = new();
-    public event EventHandler<Dictionary<string, string>>? DataReceived;
+    public event EventHandler<CacheData>? DataReceived;
 
     public PluginBase() : base() { }
 
@@ -70,7 +70,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
         ImageChangedInvoke(base.Icon);
 
     }
-    private void FlightSimulator_DataReceived(object? sender, Dictionary<string, string> e)
+    private void FlightSimulator_DataReceived(object? sender, CacheData e)
     {
         DataReceived?.Invoke(this, e);
     }
