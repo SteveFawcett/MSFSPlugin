@@ -69,10 +69,7 @@
     <None Include=".github\workflows\dotnet-desktop.yml" />
   </ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="BroadcastPluginSDK" Version="1.2.0" />
-	</ItemGroup>
-	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
+	<ItemGroup>
 		<ProjectReference Include="..\..\sfawcett123\BroadcastPluginSDK\BroadcastPluginSDK.csproj" />
 	</ItemGroup>
 	

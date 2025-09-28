@@ -5,6 +5,21 @@ using System.Runtime.InteropServices;
 
 namespace MSFSPlugin.Classes
 {
+    internal class SystemStateRequests
+    {
+        public int RequestId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string DataTypeName { get; set; } = string.Empty;
+        public bool Subscribed { get; set; } = false;
+
+        public SystemStateRequests(int id, string name, string type)
+        {
+            RequestId = id;
+            Name = name;
+            DataTypeName = type;
+        }
+    }
+
     /// <summary>
     /// Represents a connection to the Microsoft Flight Simulator using SimConnect.
     /// Provides methods to manage simulator data requests and handle connection events.
@@ -21,10 +36,20 @@ namespace MSFSPlugin.Classes
         private System.Windows.Forms.Timer requestTimer = new();
         private readonly SimVarRequestRegistry requestManager = new();
         private uint nextId = 1000;
-        public event EventHandler<CacheData>? DataReceived;
+        private readonly int SystemRequestId = 10000;
+        private readonly SystemStateRequests[] systemStates = {
+                            new SystemStateRequests(1000, "1sec",           "string"),
+                            new SystemStateRequests(1001, "AircraftLoaded", "string"),
+                            new SystemStateRequests(1002, "DialogMode",     "int"),
+                            new SystemStateRequests(1003, "FlightLoaded",   "string"),
+                            new SystemStateRequests(1004, "FlightPlan",     "string"),
+                            new SystemStateRequests(1005, "Sim",            "int"),
+                            new SystemStateRequests(1006, "Pause"  ,        "int")};
+
         #endregion
 
         public SimConnect? Connection { get => m_oSimConnect; }
+        public event EventHandler<CacheData>? DataReceived;
         public event EventHandler<bool>? ConnectionStatusChanged;
         public bool isConnected { get; private set; } = false;
         public bool ConnectToSim()
@@ -63,14 +88,11 @@ namespace MSFSPlugin.Classes
                     m_oSimConnect.OnRecvEvent += SimConnect_OnRecvEvent;
                     m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
                     m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
-                    try
-                    {
-                        m_oSimConnect.SubscribeToSystemEvent(Event.RECUR_1SEC, "1sec");
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.LogError($"{ex.Message}: Failed to subscribe to system event.");
-                    }
+                    m_oSimConnect.OnRecvSystemState += SimConnect_OnRecvSystemState;
+                    
+                    RequestSystemInformation();
+
+                    MakeRequests();
                 }
             }
             catch (COMException)
@@ -82,6 +104,57 @@ namespace MSFSPlugin.Classes
                 logger?.LogError("Unexpected error during SimConnect connection.");
             }
         }
+
+        private void RequestSystemInformation()
+        {
+            foreach (var req in systemStates)
+            {
+                logger?.LogInformation($"Requesting System State: {req.Name} with Request ID: {req.RequestId}");
+                if (!req.Subscribed)
+                {
+                    m_oSimConnect?.SubscribeToSystemEvent((EVENT)req.RequestId, req.Name);
+                    m_oSimConnect?.SetSystemEventState((EVENT)req.RequestId, SIMCONNECT_STATE.ON);
+                    req.Subscribed = true;
+                }
+                m_oSimConnect?.RequestSystemState((REQUEST)req.RequestId, req.Name);
+            }
+        }
+
+        private void SimConnect_OnRecvSystemState(SimConnect sender, SIMCONNECT_RECV_SYSTEM_STATE data)
+        {
+            logger?.LogDebug($"{sender.GetType().Name}, {data.dwRequestID} = {data.szString}");
+
+            var value = systemStates.FirstOrDefault(x => x.RequestId == (int)data.dwRequestID);
+            if (value == null)
+            {
+                logger?.LogWarning($"Unknown system state ID: {data.dwRequestID}");
+                return;
+            }
+
+            string result = value.DataTypeName.ToLower() switch
+            {
+                "string" => data.szString,
+                "int" => data.dwInteger.ToString(),
+                _ => "UNKNOWN TYPE"
+            };
+
+            var send = new CacheData
+            {
+                Data = new Dictionary<string, string> { { value.Name.ToUpper(), result } },
+                Prefix = CachePrefixes.SYSTEM
+            };
+
+            DataReceived?.Invoke(this, send);
+
+            var ping = new CacheData
+            {
+                Data = new Dictionary<string, string> { { "PING", DateTime.Now.ToString() } },
+                Prefix = CachePrefixes.SYSTEM
+            };
+
+            DataReceived?.Invoke(this, ping);
+        }
+
 
         private void SimConnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
@@ -111,9 +184,26 @@ namespace MSFSPlugin.Classes
         }
         private void SimConnect_OnRecvEvent(SimConnect sender, SIMCONNECT_RECV_EVENT recEvent)
         {
-            if (recEvent.uEventID == (uint)Event.RECUR_1SEC)
+            Dictionary<string, string> data = new();
+
+            if (recEvent.uEventID == systemStates.FirstOrDefault(x => x.Name == "Pause")!.RequestId)
+            {
+                data["PAUSED"] = ((int)recEvent.dwData) == 1 ? "True" : "False";
+            }
+
+            var send = new CacheData()
+            {
+                Data = data,
+                Prefix = CachePrefixes.DATA
+            };
+
+            DataReceived?.Invoke(this, send);
+
+            // Be sure to keep this last in function
+            if (recEvent.uEventID == systemStates.FirstOrDefault(x => x.Name == "1sec")!.RequestId)
             {
                 MakeRequests();
+                RequestSystemInformation();
             }
         }
 
@@ -148,7 +238,7 @@ namespace MSFSPlugin.Classes
                     Prefix = CachePrefixes.DATA
                 };
 
-                DataReceived?.Invoke(this, send );
+                DataReceived?.Invoke(this, send);
             }
             catch (Exception ex)
             {
@@ -174,6 +264,7 @@ namespace MSFSPlugin.Classes
                 return;
             }
 
+            // Requested data
             foreach (SimVarRequest oSimvarRequest in requestManager.GetAllRequests())
             {
                 logger?.LogDebug($"Registered Request: {oSimvarRequest.Name}, " +
@@ -182,7 +273,7 @@ namespace MSFSPlugin.Classes
                                  $"Type: {oSimvarRequest.DataTypeName}");
 
                 try
-                {       
+                {
                     m_oSimConnect?.RequestDataOnSimObjectType(oSimvarRequest.RequestId, oSimvarRequest.DefinitionId, 0, SIMCONNECT_SIMOBJECT_TYPE.USER);
 
                     logger?.LogDebug($"Data request sent for {oSimvarRequest.Name} with Request ID: {oSimvarRequest.RequestId} and Definition ID: {oSimvarRequest.DefinitionId}");
@@ -193,7 +284,7 @@ namespace MSFSPlugin.Classes
                 }
             }
         }
-        public void AddRequest(string name )
+        public void AddRequest(string name)
         {
             if (m_oSimConnect is null || isConnected is false) return;
 
@@ -225,13 +316,13 @@ namespace MSFSPlugin.Classes
                              $"Definition ID: {oSimvarRequest.DefinitionId}, " +
                              $"Request ID: {oSimvarRequest.RequestId}, ");
 
-   
+
             m_oSimConnect.AddToDataDefinition(oSimvarRequest.DefinitionId, oSimvarRequest.Name, "", datatype, 0.0f, SimConnect.SIMCONNECT_UNUSED);
-         
-            if ( datatype == SIMCONNECT_DATATYPE.STRING256 )
+
+            if (datatype == SIMCONNECT_DATATYPE.STRING256)
                 m_oSimConnect.RegisterDataDefineStruct<SimVarStringStruct>(oSimvarRequest.DefinitionId);
             else
-                m_oSimConnect.RegisterDataDefineStruct<double>( oSimvarRequest.DefinitionId);
+                m_oSimConnect.RegisterDataDefineStruct<double>(oSimvarRequest.DefinitionId);
 
             MakeRequests();
 

@@ -9,7 +9,12 @@ namespace MSFSPlugin.Classes
         ResultStructure,
         MAX_REQUESTS = 100
     };
-
+    public enum EVENT
+    {
+        Dummy = 0,
+        ResultStructure,
+        MAX_REQUESTS = 100
+    };
     public enum DEFINITION
     {
         Dummy = 0,
