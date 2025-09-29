@@ -36,7 +36,6 @@ namespace MSFSPlugin.Classes
         private System.Windows.Forms.Timer requestTimer = new();
         private readonly SimVarRequestRegistry requestManager = new();
         private uint nextId = 1000;
-        private readonly int SystemRequestId = 10000;
         private readonly SystemStateRequests[] systemStates = {
                             new SystemStateRequests(1000, "1sec",           "string"),
                             new SystemStateRequests(1001, "AircraftLoaded", "string"),

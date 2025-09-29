@@ -1,4 +1,5 @@
 ﻿using BroadcastPluginSDK.abstracts;
+using BroadcastPluginSDK.Classes;
 using BroadcastPluginSDK.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ using System.Timers;
 
 namespace MSFSPlugin;
 
-public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDisposable
+public partial class MSFSPlugin : BroadcastPluginBase, IProvider, IManager, ICommandHandler ,  IDisposable
 {
     private const string STANZA = "MSFS";
     private ILogger<IPlugin>? _logger;
@@ -21,15 +22,16 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
     private bool disposedValue;
     private readonly object connectionLock = new();
     public event EventHandler<CacheData>? DataReceived;
+    public event EventHandler<CommandItem>? CommandReceived;
 
-    public PluginBase() : base() { }
+    public MSFSPlugin() : base() { }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="PluginBase"/> class.
+    /// Initializes a new instance of the <see cref="MSFSPlugin"/> class.
     /// </summary>
     /// <param name="configuration">The configuration instance.</param>
     /// <param name="logger">The logger instance.</param>
-    public PluginBase(IConfiguration configuration, ILogger<IPlugin> logger) :
+    public MSFSPlugin(IConfiguration configuration, ILogger<IPlugin> logger) :
         base(configuration, null, Resources.red, STANZA)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -143,7 +145,7 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
                    
     }
     /// <summary>
-    /// Releases the unmanaged resources used by the PluginBase and optionally releases the managed resources.
+    /// Releases the unmanaged resources used by the MSFSPlugin and optionally releases the managed resources.
     /// </summary>
     /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
     protected virtual void Dispose(bool disposing)
@@ -184,4 +186,12 @@ public partial class PluginBase : BroadcastPluginBase, IProvider, IManager, IDis
         GC.SuppressFinalize(this);
     }
 
+    public void CommandHandler(CommandItem cmd)
+    {
+        if( cmd.CommandType != CommandTypes.Simulator)
+        {
+            _logger?.LogInformation($"Received unsupported command type: {cmd.CommandType}");
+            return;
+        }
+    }
 }

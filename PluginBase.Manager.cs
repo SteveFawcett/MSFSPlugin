@@ -3,7 +3,7 @@ using MSFSPlugin.Forms;
 
 namespace MSFSPlugin
 {
-    partial class PluginBase
+    partial class MSFSPlugin
     {
         public bool Locked { get; set; } = false; // This plugin does not require locking functionality
         public List<ToolStripItem>? ContextMenuItems { get; set; } = null;
