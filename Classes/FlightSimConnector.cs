@@ -193,7 +193,7 @@ namespace MSFSPlugin.Classes
             var send = new CacheData()
             {
                 Data = data,
-                Prefix = CachePrefixes.DATA
+                Prefix = CachePrefixes.SYSTEM
             };
 
             DataReceived?.Invoke(this, send);
@@ -217,18 +217,20 @@ namespace MSFSPlugin.Classes
 
                 string value = string.Empty;
 
+                logger?.LogDebug($"Processing data for request: {request.Name}, Type: {request.DataTypeName}");
+
                 if (request.DataTypeName.Equals("STRING256", StringComparison.OrdinalIgnoreCase))
                 {
                     SimVarStringStruct s = (SimVarStringStruct)data.dwData[0];
                     value = s.Value;
                 }
-                else if (request.DataTypeName.Equals("FLOAT32", StringComparison.OrdinalIgnoreCase))
+                else if (request.DataTypeName.Equals("FLOAT64", StringComparison.OrdinalIgnoreCase))
                 {
                     double d = (double)data.dwData[0];
                     value = d.ToString();
                 }
 
-                logger?.LogDebug($"Received {value.GetType().Name} value for {request.Name}: {value}");
+                logger?.LogInformation($"Received {value.GetType().Name} value for {request.Name}: {value}");
                 requestManager.UpdateValue(request.Name, value);
 
                 var send = new CacheData()
@@ -295,7 +297,7 @@ namespace MSFSPlugin.Classes
                 return;
             }
 
-            logger?.LogInformation($"Adding Request {Measure.Name} : {Measure.Measure} , {Measure.Type} ");
+            logger?.LogInformation($"Adding Request {Measure.Name} : {Measure.Measure} , {datatype} ");
 
             var requestId = nextId++;
             var definitionId = nextId++;
@@ -316,7 +318,7 @@ namespace MSFSPlugin.Classes
                              $"Request ID: {oSimvarRequest.RequestId}, ");
 
 
-            m_oSimConnect.AddToDataDefinition(oSimvarRequest.DefinitionId, oSimvarRequest.Name, "", datatype, 0.0f, SimConnect.SIMCONNECT_UNUSED);
+            m_oSimConnect.AddToDataDefinition(oSimvarRequest.DefinitionId, oSimvarRequest.Name, Measure.Measure, datatype, 0.0f, SimConnect.SIMCONNECT_UNUSED);
 
             if (datatype == SIMCONNECT_DATATYPE.STRING256)
                 m_oSimConnect.RegisterDataDefineStruct<SimVarStringStruct>(oSimvarRequest.DefinitionId);

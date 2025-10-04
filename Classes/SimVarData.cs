@@ -18,7 +18,7 @@ public class MeasurementUnits
             {
                 Name = name,
                 Measure = "",
-                Type = "FLOAT32"
+                Type = "FLOAT64"
             };
         }
 
@@ -28,7 +28,7 @@ public class MeasurementUnits
             {
                 Name = name,
                 Measure = unit,
-                Type = "FLOAT32"
+                Type = "FLOAT64"
             };
         }
 

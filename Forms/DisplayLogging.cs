@@ -22,6 +22,7 @@ namespace MSFSPlugin.Forms
 
         public DisplayLogging(ILogger<IPlugin>? logger = null) : base()
         {
+            InitializeComponent();
             _logger = logger;
         }
     }
