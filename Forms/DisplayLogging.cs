@@ -15,7 +15,7 @@ namespace MSFSPlugin.Forms
             // DisplayLogging
             // 
             Name = "DisplayLogging";
-            Size = new Size(703, 348);
+            Size = new Size(1200, 500);
             ResumeLayout(false);
 
         }

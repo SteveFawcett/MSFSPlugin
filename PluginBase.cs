@@ -17,10 +17,9 @@ public partial class MSFSPlugin : BroadcastPluginBase, IProvider, IManager, ICom
     private DisplayLogging? _displayLogging;
     private FlightSimulator? connect;
     private IConfiguration? _configuration;
-    private System.Timers.Timer? connectTimer;
     private bool isConnected = false;
     private bool disposedValue;
-    private readonly object connectionLock = new();
+
     public event EventHandler<CacheData>? DataReceived;
     public event EventHandler<CommandItem>? CommandReceived;
 
@@ -45,24 +44,9 @@ public partial class MSFSPlugin : BroadcastPluginBase, IProvider, IManager, ICom
 
         SetMenu(); // Setup context menu
 
-        var messageWindow = new SimConnectMessageWindow();
-        messageWindow.OnSimConnectMessage += (msg) =>
-        {
-            try
-            {
-                connect?.Connection?.ReceiveMessage();
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"ReceiveMessage failed: {ex.Message}");
-            }
-        };
-
-        connect = new FlightSimulator(_displayLogging, messageWindow.Handle);
+        connect = new FlightSimulator(_displayLogging);
         connect.ConnectionStatusChanged += Connector_ConnectionStatusChanged;
         connect.DataReceived += FlightSimulator_DataReceived;
-        SetupTimer(); // Setup connection timer
-
     }
 
     public void SetState(bool isConnected = false)
@@ -75,42 +59,6 @@ public partial class MSFSPlugin : BroadcastPluginBase, IProvider, IManager, ICom
     private void FlightSimulator_DataReceived(object? sender, CacheData e)
     {
         DataReceived?.Invoke(this, e);
-    }
-
-    private void SetupTimer()
-    {
-        connectTimer = new System.Timers.Timer(3000); // every 3 seconds
-        connectTimer.Elapsed += OnTimerElapsed;
-        connectTimer.AutoReset = true;
-        connectTimer.Start();
-    }
-
-    private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
-    {
-        if ( connect is not null && connect.isConnected ) return; // Already connected
-
-        SimulatorReconnect();        
-    }
-
-    private void SimulatorReconnect()
-    {
-        lock (connectionLock)
-        {
-            if (connect == null) return;
-
-            try
-            {
-                _displayLogging?.LogDebug("SimulatorReconnect() was called by timer.");
-                if (isConnected) return; // Already connected
-                _displayLogging?.LogInformation("Attempting to connect to Flight Simulator...");
-                isConnected = connect.ConnectToSim();
-                SetState( isConnected);
-            }
-            catch (Exception ex)
-            {
-                _displayLogging?.LogError($"Error during Simulator Reconnect: {ex.Message}");
-            }
-        }
     }
 
     private void Connector_ConnectionStatusChanged(object? sender, bool newConnectionStatus)
@@ -154,13 +102,6 @@ public partial class MSFSPlugin : BroadcastPluginBase, IProvider, IManager, ICom
         {
             if (disposing)
             {
-                if (connectTimer != null)
-                {
-                    connectTimer.Elapsed -= OnTimerElapsed;
-                    connectTimer.Stop();
-                    connectTimer.Dispose();
-                    connectTimer = null;
-                }
                 if (connect != null)
                 {
                     connect.Dispose();

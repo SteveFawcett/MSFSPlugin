@@ -16,8 +16,8 @@ public class MeasurementUnits
         {
             return new Datum
             {
-                Name = name,
-                Measure = "",
+                Name = string.Empty,
+                Measure = string.Empty,
                 Type = "FLOAT64"
             };
         }
@@ -32,7 +32,12 @@ public class MeasurementUnits
             };
         }
 
-        throw new KeyNotFoundException($"Measurement unit '{name}' not found in UnitsByName.");
+        return new Datum
+        {
+            Name = string.Empty,
+            Measure = string.Empty,
+            Type = "FLOAT64"
+        };
     }
 
     public MeasurementUnits()
@@ -1006,7 +1011,7 @@ public class MeasurementUnits
         { "PITOT HEAT", "Bool" },
         { "PITOT HEAT SWITCH", "Enum" },
         { "PITOT ICE PCT", "Percent over 100" },
-        { "PLANE ALTITUDE", "Feet" },
+        { "PLANE ALTITUDE", "Ft" },
         { "PLANE ALT ABOVE GROUND", "Feet" },
         { "PLANE ALT ABOVE GROUND MINUS CG", "Feet" },
         { "PLANE BANK DEGREES", "Radians" },
