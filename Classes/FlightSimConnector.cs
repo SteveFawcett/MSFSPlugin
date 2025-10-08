@@ -41,15 +41,6 @@ namespace MSFSPlugin.Classes
 
         private readonly SimVarRequestRegistry requestManager = new();
         private uint nextId = 1;
-        private readonly SystemStateRequests[] systemStates = {
-                     //       new SystemStateRequests(10000, "1sec",           "string"),
-                            new SystemStateRequests(10001, "AircraftLoaded", "string"),
-                            new SystemStateRequests(10002, "DialogMode",     "int"),
-                            new SystemStateRequests(10003, "FlightLoaded",   "string"),
-                            new SystemStateRequests(10004, "FlightPlan",     "string"),
-                            new SystemStateRequests(10005, "Sim",            "int"),
-                    //        new SystemStateRequests(10006, "Pause"  ,        "int")
-                    };
 
         #endregion
 
@@ -75,6 +66,9 @@ namespace MSFSPlugin.Classes
                         m_oSimConnect.OnRecvQuit += SimConnect_OnRecvQuit;
                         m_oSimConnect.OnRecvException += SimConnect_OnRecvException;
                         m_oSimConnect.OnRecvSystemState += SimConnect_OnRecvSystemState;
+
+                        RequestSystemInformation();
+
                         UpdateConnectionStatus(true);
                     }
                 }
@@ -122,25 +116,19 @@ namespace MSFSPlugin.Classes
             {
                 ConnectToSim();
                 MakeRequests();
-                RequestSystemInformation();
             }
             catch (Exception ex)
             {
                 logger?.LogError($"Polling error: {ex.Message}");
             }
         }
+        
         private void RequestSystemInformation()
         {
-            foreach (var req in systemStates)
+            foreach (Events req in Enum.GetValues(typeof(Events)))
             {
-                logger?.LogDebug($"Requesting System State: {req.Name} with Request ID: {req.RequestId}");
-                if (!req.Subscribed)
-                {
-                    m_oSimConnect?.SubscribeToSystemEvent((EVENT)req.RequestId, req.Name);
-                    m_oSimConnect?.SetSystemEventState((EVENT)req.RequestId, SIMCONNECT_STATE.ON);
-                    req.Subscribed = true;
-                }
-                m_oSimConnect?.RequestSystemState((REQUEST)req.RequestId, req.Name);
+                m_oSimConnect?.SubscribeToSystemEvent( req, req.ToEventName() );
+                m_oSimConnect?.SetSystemEventState(    req, SIMCONNECT_STATE.ON);
             }
         }
 
@@ -148,28 +136,7 @@ namespace MSFSPlugin.Classes
         {
             logger?.LogDebug($"{sender.GetType().Name}, {data.dwRequestID} = {data.szString}");
 
-            var value = systemStates.FirstOrDefault(x => x.RequestId == (int)data.dwRequestID);
-            if (value == null)
-            {
-                logger?.LogWarning($"Unknown system state ID: {data.dwRequestID}");
-                return;
-            }
-
-            string result = value.DataTypeName.ToLower() switch
-            {
-                "string" => data.szString,
-                "int" => data.dwInteger.ToString(),
-                _ => "UNKNOWN TYPE"
-            };
-
-            var send = new CacheData
-            {
-                Data = new Dictionary<string, string> { { value.Name.ToUpper(), result } },
-                Prefix = CachePrefixes.SYSTEM
-            };
-
-            DataReceived?.Invoke(this, send);
-
+            /**** TODO : Handle system state changes 
             var ping = new CacheData
             {
                 Data = new Dictionary<string, string> { { "PING", DateTime.Now.ToString() } },
@@ -177,8 +144,8 @@ namespace MSFSPlugin.Classes
             };
 
             DataReceived?.Invoke(this, ping);
+            **********************************/
         }
-
 
         private void SimConnect_OnRecvQuit(SimConnect sender, SIMCONNECT_RECV data)
         {
@@ -190,7 +157,7 @@ namespace MSFSPlugin.Classes
         {
             SIMCONNECT_EXCEPTION ex = (SIMCONNECT_EXCEPTION)data.dwException;
 
-            logger?.LogWarning($"Received Exception Message {ex}");
+            logger?.LogWarning($"Received Exception Message {ex} - Send Id: {data.dwSendID} , Index: {data.dwIndex} , Id: {data.dwID}");
 
             // UpdateConnectionStatus(false);
         }
@@ -210,22 +177,24 @@ namespace MSFSPlugin.Classes
         }
         private void SimConnect_OnRecvEvent(SimConnect sender, SIMCONNECT_RECV_EVENT recEvent)
         {
-            logger?.LogInformation($"SimConnect_OnRecvEvent: EventID={recEvent.uEventID}, Data={recEvent.dwData}");
+            Events events = (Events)recEvent.uEventID;
+            logger?.LogInformation($"SimConnect_OnRecvEvent: EventID={events.ToString()} , Data={recEvent.dwData}");
 
-            Dictionary<string, string> data = new();
+            Dictionary<string, string> eventData = new();
 
-            if (recEvent.uEventID == systemStates.FirstOrDefault(x => x.Name == "Pause")!.RequestId)
+            if (events == Events.EVENT_PAUSE)
             {
-                data["PAUSED"] = ((int)recEvent.dwData) == 1 ? "True" : "False";
+                eventData["PAUSED"] = (recEvent.dwData == 1) ? "True" : "False";
             }
 
             var send = new CacheData()
             {
-                Data = data,
+                Data = eventData,
                 Prefix = CachePrefixes.SYSTEM
             };
 
             DataReceived?.Invoke(this, send);
+
         }
 
         private void HandleSimData(SimConnect sender, SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE data)

@@ -7,23 +7,30 @@ namespace MSFSPlugin.Classes
     {
         Dummy = 0,
     };
-    public enum EVENT
-    {
-        Dummy = 0,
-    };
     public enum DEFINITION
     {
         Dummy = 0,
     };
-    internal enum Event
+    internal enum Events
     {
-        RECUR_1SEC,
+        EVENT_FLIGHT_LOAD ,
+        EVENT_RECUR_FRAME ,
+        EVENT_CRASHED,
+        EVENT_CRASH_RESET,
+        EVENT_PAUSE,
     }
 
-    internal enum Requests
+    internal static class EventExtensions
     {
-        SIMULATION,
-        AIRCRAFT_LOADED,
+        public static string ToEventName(this Events e) => e switch
+        {
+            Events.EVENT_FLIGHT_LOAD => "FlightLoaded",
+            Events.EVENT_RECUR_FRAME => "Frame",
+            Events.EVENT_CRASHED => "Crashed",
+            Events.EVENT_CRASH_RESET => "CrashReset",
+            Events.EVENT_PAUSE => "Pause",
+            _ => throw new ArgumentOutOfRangeException(nameof(e), e, null)
+        };
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
