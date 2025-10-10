@@ -88,5 +88,29 @@ namespace MSFSPlugin.Classes
             requestIdMap.Clear();
         }
     }
+
+    public class SimConnectDataRegistry
+    {
+        private readonly Dictionary<DEFINITION, List<string>> _definitions = new();
+        private readonly Dictionary<string, DEFINITION> _reverseLookup = new();
+
+        public void Add(DEFINITION definitionId, string simVarName)
+        {
+            if (!_definitions.ContainsKey(definitionId))
+                _definitions[definitionId] = new List<string>();
+
+            _definitions[definitionId].Add(simVarName);
+            _reverseLookup[simVarName] = definitionId;
+        }
+
+        public IReadOnlyDictionary<DEFINITION, List<string>> GetAll() => _definitions;
+
+        public DEFINITION? GetByName(string simVarName)
+        {
+            return _reverseLookup.TryGetValue(simVarName, out var defId) ? defId : null;
+        }
+    }
+
+
 }
 
